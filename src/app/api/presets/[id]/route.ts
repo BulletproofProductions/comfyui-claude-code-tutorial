@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { presets } from "@/lib/schema";
 import type { Preset, UpdatePresetInput, PresetConfig } from "@/lib/types/generation";
@@ -16,22 +14,12 @@ interface RouteParams {
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     const [preset] = await db
       .select()
       .from(presets)
-      .where(
-        and(
-          eq(presets.id, id),
-          eq(presets.userId, session.user.id)
-        )
-      );
+      .where(eq(presets.id, id));
 
     if (!preset) {
       return NextResponse.json({ error: "Preset not found" }, { status: 404 });
@@ -39,7 +27,6 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     const formattedPreset: Preset = {
       id: preset.id,
-      userId: preset.userId,
       name: preset.name,
       config: preset.config as PresetConfig,
       createdAt: preset.createdAt,
@@ -62,25 +49,15 @@ export async function GET(_request: Request, { params }: RouteParams) {
  */
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = (await request.json()) as UpdatePresetInput;
     const { name, config } = body;
 
-    // Verify the preset exists and belongs to the user
+    // Verify the preset exists
     const [existingPreset] = await db
       .select()
       .from(presets)
-      .where(
-        and(
-          eq(presets.id, id),
-          eq(presets.userId, session.user.id)
-        )
-      );
+      .where(eq(presets.id, id));
 
     if (!existingPreset) {
       return NextResponse.json({ error: "Preset not found" }, { status: 404 });
@@ -133,7 +110,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const formattedPreset: Preset = {
       id: updatedPreset.id,
-      userId: updatedPreset.userId,
       name: updatedPreset.name,
       config: updatedPreset.config as PresetConfig,
       createdAt: updatedPreset.createdAt,
@@ -156,23 +132,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
  */
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
-    // Verify the preset exists and belongs to the user
+    // Verify the preset exists
     const [existingPreset] = await db
       .select()
       .from(presets)
-      .where(
-        and(
-          eq(presets.id, id),
-          eq(presets.userId, session.user.id)
-        )
-      );
+      .where(eq(presets.id, id));
 
     if (!existingPreset) {
       return NextResponse.json({ error: "Preset not found" }, { status: 404 });

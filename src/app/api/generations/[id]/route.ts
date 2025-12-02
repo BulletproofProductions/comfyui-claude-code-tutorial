@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { generations, generatedImages, generationHistory } from "@/lib/schema";
 import { deleteFile } from "@/lib/storage";
@@ -17,23 +15,13 @@ interface RouteParams {
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     // Get the generation
     const [generation] = await db
       .select()
       .from(generations)
-      .where(
-        and(
-          eq(generations.id, id),
-          eq(generations.userId, session.user.id)
-        )
-      );
+      .where(eq(generations.id, id));
 
     if (!generation) {
       return NextResponse.json({ error: "Generation not found" }, { status: 404 });
@@ -54,7 +42,6 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     const generationWithImages: GenerationWithImages = {
       id: generation.id,
-      userId: generation.userId,
       prompt: generation.prompt,
       settings: generation.settings as GenerationSettings,
       status: generation.status as "pending" | "processing" | "completed" | "failed",
@@ -65,7 +52,6 @@ export async function GET(_request: Request, { params }: RouteParams) {
         id: img.id,
         generationId: img.generationId,
         imageUrl: img.imageUrl,
-        isPublic: img.isPublic,
         createdAt: img.createdAt,
       })),
     };
@@ -98,23 +84,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
  */
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
-    // Verify the generation belongs to the user
+    // Verify the generation exists
     const [generation] = await db
       .select()
       .from(generations)
-      .where(
-        and(
-          eq(generations.id, id),
-          eq(generations.userId, session.user.id)
-        )
-      );
+      .where(eq(generations.id, id));
 
     if (!generation) {
       return NextResponse.json({ error: "Generation not found" }, { status: 404 });

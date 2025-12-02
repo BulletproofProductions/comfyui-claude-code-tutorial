@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import { writeFile, mkdir } from "fs/promises";
+import { readFile as fsReadFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { put, del } from "@vercel/blob";
 
@@ -217,6 +217,40 @@ export async function deleteFile(url: string): Promise<void> {
       await unlink(filepath);
     }
   }
+}
+
+/**
+ * Reads a file from storage and returns its contents as a Buffer
+ *
+ * @param url - The URL of the file to read (either absolute URL or local path like /uploads/...)
+ * @returns Buffer containing the file contents
+ *
+ * @example
+ * ```ts
+ * const buffer = await readFromStorage("https://blob.vercel.io/...");
+ * // or
+ * const buffer = await readFromStorage("/uploads/avatars/avatar.png");
+ * ```
+ */
+export async function readFromStorage(url: string): Promise<Buffer> {
+  // Check if it's an absolute URL (Vercel Blob or external)
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file from ${url}: ${response.statusText}`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  // Local file - extract pathname from URL (e.g., /uploads/avatars/avatar.png -> avatars/avatar.png)
+  const pathname = url.replace(/^\/uploads\//, "");
+  const filepath = join(process.cwd(), "public", "uploads", pathname);
+
+  if (!existsSync(filepath)) {
+    throw new Error(`File not found: ${filepath}`);
+  }
+
+  return fsReadFile(filepath);
 }
 
 

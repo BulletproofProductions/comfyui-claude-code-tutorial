@@ -1,9 +1,11 @@
 "use client";
 
-import { Wand2 } from "lucide-react";
+import { Wand2, Shuffle } from "lucide-react";
+import { GenerationProgress } from "@/components/generate/generation-progress";
 import { LoadPresetDropdown } from "@/components/presets/load-preset-dropdown";
 import { SavePresetModal } from "@/components/presets/save-preset-modal";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -14,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import type { GenerationSettings, Preset, PresetConfig } from "@/lib/types/generation";
 
 interface PreviewPanelProps {
@@ -22,7 +25,8 @@ interface PreviewPanelProps {
   onSettingsChange: (settings: Partial<GenerationSettings>) => void;
   onGenerate: () => void;
   isGenerating: boolean;
-  hasApiKey: boolean;
+  // Progress tracking
+  currentPromptId: string | null;
   // Preset props
   currentConfig: PresetConfig;
   presets: Preset[];
@@ -38,7 +42,7 @@ export function PreviewPanel({
   onSettingsChange,
   onGenerate,
   isGenerating,
-  hasApiKey,
+  currentPromptId,
   currentConfig,
   presets,
   presetsLoading,
@@ -46,6 +50,20 @@ export function PreviewPanel({
   onLoadPreset,
   onDeletePreset,
 }: PreviewPanelProps) {
+  const handleRandomizeSeed = () => {
+    onSettingsChange({ seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) });
+  };
+
+  const handleSeedChange = (value: string) => {
+    if (value === "") {
+      onSettingsChange({ seed: undefined });
+    } else {
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue) && numValue >= 0) {
+        onSettingsChange({ seed: numValue });
+      }
+    }
+  };
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -157,32 +175,99 @@ export function PreviewPanel({
                 </SelectContent>
               </Select>
             </div>
+
+            <Separator />
+
+            <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              ComfyUI Settings
+            </h3>
+
+            {/* Steps */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Steps</Label>
+                <span className="text-sm text-muted-foreground">{settings.steps || 20}</span>
+              </div>
+              <Slider
+                value={[settings.steps || 20]}
+                onValueChange={(value) => onSettingsChange({ steps: value[0] })}
+                min={1}
+                max={50}
+                step={1}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                More steps = better quality but slower
+              </p>
+            </div>
+
+            {/* Guidance */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Guidance</Label>
+                <span className="text-sm text-muted-foreground">{settings.guidance || 4}</span>
+              </div>
+              <Slider
+                value={[settings.guidance || 4]}
+                onValueChange={(value) => onSettingsChange({ guidance: value[0] })}
+                min={1}
+                max={10}
+                step={0.5}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Higher = follows prompt more closely
+              </p>
+            </div>
+
+            {/* Seed */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Seed</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Random"
+                  value={settings.seed ?? ""}
+                  onChange={(e) => handleSeedChange(e.target.value)}
+                  className="flex-1"
+                  min={0}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRandomizeSeed}
+                  title="Randomize seed"
+                >
+                  <Shuffle className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Same seed = reproducible results
+              </p>
+            </div>
           </div>
         </div>
       </ScrollArea>
 
-      {/* Generate Button */}
-      <div className="p-4 border-t">
-        {!hasApiKey ? (
-          <div className="text-center py-2">
-            <p className="text-sm text-muted-foreground mb-2">
-              Please add your Google API key in your profile to generate images.
-            </p>
-            <Button variant="outline" asChild>
-              <a href="/profile">Go to Profile</a>
-            </Button>
-          </div>
-        ) : (
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={onGenerate}
-            disabled={isGenerating || !assembledPrompt}
-          >
-            <Wand2 className="h-5 w-5 mr-2" />
-            {isGenerating ? "Generating..." : "Generate Images"}
-          </Button>
+      {/* Generate Button and Progress */}
+      <div className="p-4 border-t space-y-4">
+        {isGenerating && currentPromptId && (
+          <GenerationProgress
+            promptId={currentPromptId}
+            isGenerating={isGenerating}
+          />
         )}
+
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={onGenerate}
+          disabled={isGenerating || !assembledPrompt}
+        >
+          <Wand2 className="h-5 w-5 mr-2" />
+          {isGenerating ? "Generating..." : "Generate Images"}
+        </Button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 // ==========================================
-// Nano Banana Pro - TypeScript Types
+// ComfyUI Image Generator - TypeScript Types (Simplified - No Auth)
 // ==========================================
 
 // Avatar Types
@@ -7,7 +7,6 @@ export type AvatarType = "human" | "object";
 
 export interface Avatar {
   id: string;
-  userId: string;
   name: string;
   imageUrl: string;
   description: string | null;
@@ -38,11 +37,13 @@ export interface GenerationSettings {
   resolution: ImageResolution;
   aspectRatio: AspectRatio;
   imageCount: 1 | 2 | 3 | 4;
+  steps?: number | undefined; // 1-50, default 20
+  guidance?: number | undefined; // 1-10, default 4
+  seed?: number | undefined; // Optional, random if not provided
 }
 
 export interface Generation {
   id: string;
-  userId: string;
   prompt: string;
   settings: GenerationSettings;
   status: GenerationStatus;
@@ -55,7 +56,6 @@ export interface GeneratedImage {
   id: string;
   generationId: string;
   imageUrl: string;
-  isPublic: boolean;
   createdAt: Date;
 }
 
@@ -98,11 +98,15 @@ export interface PresetConfig {
   style?: string;
   subjects: SubjectConfig[];
   customPrompt?: string;
+  // FLUX.2 Specific Fields
+  mood?: string;
+  cameraModel?: string;
+  lens?: string;
+  colorPalette?: string;
 }
 
 export interface Preset {
   id: string;
-  userId: string;
   name: string;
   config: PresetConfig;
   createdAt: Date;
@@ -135,14 +139,14 @@ export interface PromptBuilderState {
   style: string;
   subjects: SubjectConfig[];
   customPrompt: string;
+  // FLUX.2 Specific Fields
+  mood: string;
+  cameraModel: string;
+  lens: string;
+  colorPalette: string;
 }
 
 // API Response Types
-export interface ApiKeyStatus {
-  hasKey: boolean;
-  hint?: string;
-}
-
 export interface GenerateImageRequest {
   prompt: string;
   settings: GenerationSettings;
@@ -158,57 +162,11 @@ export interface RefineImageRequest {
   instruction: string;
 }
 
-// Gallery Types
-export interface GalleryImage extends GeneratedImage {
-  generation: {
-    prompt: string;
-    settings: GenerationSettings;
-    createdAt: Date;
-  };
-  user: {
-    id: string;
-    name: string;
-    image: string | null;
-  };
-  likeCount: number;
-  isLikedByUser: boolean;
-}
-
+// Pagination Response Type
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
   page: number;
   pageSize: number;
   hasMore: boolean;
-}
-
-// Like Types
-export interface ImageLike {
-  id: string;
-  imageId: string;
-  userId: string;
-  createdAt: Date;
-}
-
-// Top Contributor Types
-export interface TopContributor {
-  user: {
-    id: string;
-    name: string;
-    image: string | null;
-  };
-  totalImages: number;
-  totalLikes: number;
-}
-
-// Public User Profile Types
-export interface PublicUserProfile {
-  id: string;
-  name: string;
-  image: string | null;
-  createdAt: Date;
-  stats: {
-    totalPublicImages: number;
-    totalLikesReceived: number;
-  };
 }

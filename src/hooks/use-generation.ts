@@ -24,6 +24,12 @@ interface RefineInput {
   selectedImageId?: string;
 }
 
+interface ProgressState {
+  step: number;
+  totalSteps: number;
+  percentage: number;
+}
+
 interface UseGenerationReturn {
   // Current generation state
   currentGeneration: GenerationWithImages | null;
@@ -31,6 +37,10 @@ interface UseGenerationReturn {
   isGenerating: boolean;
   isRefining: boolean;
   error: string | null;
+
+  // Progress tracking
+  progress: ProgressState | null;
+  currentPromptId: string | null;
 
   // Generation list state
   generations: GenerationWithImages[];
@@ -50,6 +60,7 @@ interface UseGenerationReturn {
   deleteGeneration: (id: string) => Promise<boolean>;
   clearCurrent: () => void;
   clearError: () => void;
+  resetProgress: () => void;
 }
 
 export function useGeneration(): UseGenerationReturn {
@@ -59,6 +70,10 @@ export function useGeneration(): UseGenerationReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Progress tracking state
+  const [progress, setProgress] = useState<ProgressState | null>(null);
+  const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
 
   // Generation list state
   const [generations, setGenerations] = useState<GenerationWithImages[]>([]);
@@ -71,12 +86,21 @@ export function useGeneration(): UseGenerationReturn {
   });
 
   /**
+   * Reset progress state
+   */
+  const resetProgress = useCallback(() => {
+    setProgress(null);
+    setCurrentPromptId(null);
+  }, []);
+
+  /**
    * Generate new images
    */
   const generate = useCallback(
     async (input: GenerateInput): Promise<GenerationWithImages | null> => {
       setIsGenerating(true);
       setError(null);
+      setProgress({ step: 0, totalSteps: input.settings.steps || 20, percentage: 0 });
 
       try {
         const response = await fetch("/api/generate", {
@@ -95,12 +119,15 @@ export function useGeneration(): UseGenerationReturn {
           // Even on error, we may have a generation record with failed status
           if (data.generation) {
             setCurrentGeneration(data.generation);
+            // Set promptId for potential progress tracking even on error
+            setCurrentPromptId(data.generation.id);
           }
           return null;
         }
 
         const generation = data.generation as GenerationWithImages;
         setCurrentGeneration(generation);
+        setCurrentPromptId(generation.id);
 
         // Add to the list if we have a list loaded
         setGenerations((prev) => {
@@ -119,9 +146,10 @@ export function useGeneration(): UseGenerationReturn {
         return null;
       } finally {
         setIsGenerating(false);
+        resetProgress();
       }
     },
-    []
+    [resetProgress]
   );
 
   /**
@@ -286,6 +314,8 @@ export function useGeneration(): UseGenerationReturn {
     isGenerating,
     isRefining,
     error,
+    progress,
+    currentPromptId,
     generations,
     isLoadingList,
     pagination,
@@ -296,5 +326,6 @@ export function useGeneration(): UseGenerationReturn {
     deleteGeneration,
     clearCurrent,
     clearError,
+    resetProgress,
   };
 }

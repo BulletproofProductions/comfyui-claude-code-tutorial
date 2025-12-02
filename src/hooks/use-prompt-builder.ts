@@ -22,6 +22,11 @@ interface UsePromptBuilderReturn {
   setStyle: (value: string) => void;
   setCustomPrompt: (value: string) => void;
   setSettings: (settings: Partial<GenerationSettings>) => void;
+  // FLUX.2 Specific Setters
+  setMood: (value: string) => void;
+  setCameraModel: (value: string) => void;
+  setLens: (value: string) => void;
+  setColorPalette: (value: string) => void;
 
   // Subject management
   addSubject: () => void;
@@ -42,6 +47,9 @@ const defaultSettings: GenerationSettings = {
   resolution: "2K",
   aspectRatio: "1:1",
   imageCount: 1,
+  steps: 20,
+  guidance: 4,
+  seed: undefined, // Random by default
 };
 
 const defaultState: PromptBuilderState = {
@@ -51,6 +59,11 @@ const defaultState: PromptBuilderState = {
   style: "",
   subjects: [],
   customPrompt: "",
+  // FLUX.2 Specific Fields
+  mood: "",
+  cameraModel: "",
+  lens: "",
+  colorPalette: "",
 };
 
 const createEmptySubject = (): SubjectConfig => ({
@@ -91,6 +104,23 @@ export function usePromptBuilder(): UsePromptBuilderReturn {
 
   const setSettings = useCallback((newSettings: Partial<GenerationSettings>) => {
     setSettingsState((prev) => ({ ...prev, ...newSettings }));
+  }, []);
+
+  // FLUX.2 Specific Setters
+  const setMood = useCallback((value: string) => {
+    setState((prev) => ({ ...prev, mood: value }));
+  }, []);
+
+  const setCameraModel = useCallback((value: string) => {
+    setState((prev) => ({ ...prev, cameraModel: value }));
+  }, []);
+
+  const setLens = useCallback((value: string) => {
+    setState((prev) => ({ ...prev, lens: value }));
+  }, []);
+
+  const setColorPalette = useCallback((value: string) => {
+    setState((prev) => ({ ...prev, colorPalette: value }));
   }, []);
 
   // Subject management
@@ -141,6 +171,7 @@ export function usePromptBuilder(): UsePromptBuilderReturn {
   }, []);
 
   // Assemble the final prompt
+  // FLUX.2 Optimal Order: Style → Camera Model → Subjects → Location → Mood → Lighting → Lens → Camera/Composition → Color Palette → Custom
   const assembledPrompt = useMemo(() => {
     const parts: string[] = [];
 
@@ -148,6 +179,12 @@ export function usePromptBuilder(): UsePromptBuilderReturn {
     const stylePrompt = getPromptValue(state.style);
     if (stylePrompt) {
       parts.push(stylePrompt);
+    }
+
+    // Add camera model for photorealistic authenticity (FLUX.2 specific)
+    const cameraModelPrompt = getPromptValue(state.cameraModel);
+    if (cameraModelPrompt) {
+      parts.push(cameraModelPrompt);
     }
 
     // Add subjects
@@ -188,16 +225,34 @@ export function usePromptBuilder(): UsePromptBuilderReturn {
       parts.push(`in ${locationPrompt}`);
     }
 
+    // Add mood/atmosphere (FLUX.2 specific)
+    const moodPrompt = getPromptValue(state.mood);
+    if (moodPrompt) {
+      parts.push(moodPrompt);
+    }
+
     // Add lighting
     const lightingPrompt = getPromptValue(state.lighting);
     if (lightingPrompt) {
       parts.push(lightingPrompt);
     }
 
+    // Add lens characteristics (FLUX.2 specific)
+    const lensPrompt = getPromptValue(state.lens);
+    if (lensPrompt) {
+      parts.push(lensPrompt);
+    }
+
     // Add camera/composition
     const cameraPrompt = getPromptValue(state.camera);
     if (cameraPrompt) {
       parts.push(cameraPrompt);
+    }
+
+    // Add color palette (FLUX.2 specific)
+    const colorPalettePrompt = getPromptValue(state.colorPalette);
+    if (colorPalettePrompt) {
+      parts.push(colorPalettePrompt);
     }
 
     // Add custom prompt at the end
@@ -239,6 +294,11 @@ export function usePromptBuilder(): UsePromptBuilderReturn {
     setStyle,
     setCustomPrompt,
     setSettings,
+    // FLUX.2 Specific Setters
+    setMood,
+    setCameraModel,
+    setLens,
+    setColorPalette,
     addSubject,
     removeSubject,
     updateSubject,

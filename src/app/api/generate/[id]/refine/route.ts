@@ -1,19 +1,17 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and, asc } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq, asc } from "drizzle-orm";
+import { comfyui, getResolutionDimensions } from "@/lib/comfyui";
 import { db } from "@/lib/db";
-import { generateWithUserKey, type ReferenceImage } from "@/lib/gemini";
 import { generations, generatedImages, generationHistory } from "@/lib/schema";
 import { upload } from "@/lib/storage";
 import type {
   GenerationSettings,
   GenerationWithImages,
   GenerationHistoryEntry,
+  ImageResolution,
+  AspectRatio,
 } from "@/lib/types/generation";
 
-// Maximum duration for Vercel Hobby plan is 60 seconds
-export const maxDuration = 60;
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -26,15 +24,10 @@ interface RefineRequestBody {
 
 /**
  * POST /api/generate/[id]/refine
- * Refine an existing generation with additional instructions
+ * Refine an existing generation with additional instructions using ComfyUI
  */
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = (await request.json()) as RefineRequestBody;
     const { instruction, selectedImageId } = body;
@@ -47,16 +40,20 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Get the generation and verify ownership
+    // Check if ComfyUI is available
+    const isComfyUIAvailable = await comfyui.healthCheck();
+    if (!isComfyUIAvailable) {
+      return NextResponse.json(
+        { error: "ComfyUI server is not running. Please start ComfyUI and try again." },
+        { status: 503 }
+      );
+    }
+
+    // Get the generation
     const [generation] = await db
       .select()
       .from(generations)
-      .where(
-        and(
-          eq(generations.id, id),
-          eq(generations.userId, session.user.id)
-        )
-      );
+      .where(eq(generations.id, id));
 
     if (!generation) {
       return NextResponse.json({ error: "Generation not found" }, { status: 404 });
@@ -98,23 +95,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Get the generation history for multi-turn context (text only, no images)
-    // Note: We don't pass imageUrls in history because Gemini 3's thinking mode
-    // requires thought_signature for images from previous turns, which we don't store
-    const history = await db
-      .select()
-      .from(generationHistory)
-      .where(eq(generationHistory.generationId, id))
-      .orderBy(asc(generationHistory.createdAt));
-
-    // Build history entries for the API (text only to avoid thought_signature requirement)
-    const historyEntries: { role: "user" | "assistant"; content: string; imageUrls: string[] }[] =
-      history.map((h) => ({
-        role: h.role as "user" | "assistant",
-        content: h.content,
-        imageUrls: [], // Don't include images in history to avoid thought_signature requirement
-      }));
-
     // Update generation status to processing
     await db
       .update(generations)
@@ -132,140 +112,167 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Parse the settings
     const settings = generation.settings as GenerationSettings;
 
-    // Create reference image for refinement
-    const referenceImages: ReferenceImage[] = [
-      {
-        imageUrl: referenceImage.imageUrl,
-        type: "human",
-        name: "previous generation",
-      },
-    ];
+    try {
+      // Get dimensions from resolution and aspect ratio
+      const { width, height } = getResolutionDimensions(
+        settings.resolution as ImageResolution,
+        settings.aspectRatio as AspectRatio
+      );
 
-    // Generate refined image(s) with history context
-    const result = await generateWithUserKey(
-      session.user.id,
-      instruction.trim(),
-      {
-        resolution: settings.resolution,
-        aspectRatio: settings.aspectRatio,
-        imageCount: settings.imageCount || 1,
-        referenceImages,
-        history: historyEntries,
+      // Upload reference image to ComfyUI
+      const imageResponse = await fetch(referenceImage.imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error("Failed to fetch reference image");
       }
-    );
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const uploadResult = await comfyui.uploadImage(
+        imageBuffer,
+        `ref-${id}-refine-${Date.now()}.png`
+      );
 
-    if (!result.success || result.images.length === 0) {
+      // Build the refinement prompt (combine original prompt with instruction)
+      const refinementPrompt = `${generation.prompt}. ${instruction.trim()}`;
+
+      // Generate refined image(s)
+      const imageCount = settings.imageCount || 1;
+      const savedImages = [];
+
+      for (let i = 0; i < imageCount; i++) {
+        // Build the workflow with reference image
+        const workflow = comfyui.buildFlux2Workflow({
+          prompt: refinementPrompt,
+          width,
+          height,
+          steps: settings.steps,
+          guidance: settings.guidance,
+          seed: settings.seed !== undefined ? settings.seed + i : undefined,
+          referenceImageFilename: uploadResult.name,
+        });
+
+        // Queue the prompt
+        const queueResult = await comfyui.queuePrompt(workflow);
+
+        // Wait for completion
+        const history = await comfyui.waitForCompletion(queueResult.prompt_id);
+
+        // Get the generated images from the output
+        const outputNode = Object.values(history.outputs).find((output) => output.images?.length);
+        if (!outputNode?.images?.length) {
+          throw new Error("No images in generation output");
+        }
+
+        // Fetch and save each generated image
+        for (const imageInfo of outputNode.images) {
+          const generatedImageBuffer = await comfyui.getImage(
+            imageInfo.filename,
+            imageInfo.subfolder,
+            imageInfo.type
+          );
+
+          const timestamp = Date.now();
+          const filename = `gen-${id}-refine-${i}-${timestamp}.png`;
+
+          // Upload to storage
+          const storageResult = await upload(generatedImageBuffer, filename, "generations");
+
+          // Save to database
+          const [savedImage] = await db
+            .insert(generatedImages)
+            .values({
+              generationId: id,
+              imageUrl: storageResult.url,
+            })
+            .returning();
+
+          if (savedImage) {
+            savedImages.push(savedImage);
+          }
+        }
+      }
+
+      if (savedImages.length === 0) {
+        throw new Error("No images were generated");
+      }
+
+      // Store the assistant response in history
+      await db.insert(generationHistory).values({
+        generationId: id,
+        role: "assistant",
+        content: `Generated ${savedImages.length} refined image(s) successfully`,
+        imageUrls: savedImages.map((img) => img.imageUrl),
+      });
+
+      // Update generation status back to completed and update the prompt
+      const newPrompt = `${generation.prompt} | Refinement: ${instruction.trim()}`;
+      await db
+        .update(generations)
+        .set({
+          status: "completed",
+          prompt: newPrompt,
+        })
+        .where(eq(generations.id, id));
+
+      // Fetch all images for this generation (including new ones)
+      const allImages = await db
+        .select()
+        .from(generatedImages)
+        .where(eq(generatedImages.generationId, id));
+
+      // Fetch updated history
+      const updatedHistory = await db
+        .select()
+        .from(generationHistory)
+        .where(eq(generationHistory.generationId, id))
+        .orderBy(asc(generationHistory.createdAt));
+
+      // Build response
+      const generationWithImages: GenerationWithImages = {
+        id: generation.id,
+        prompt: newPrompt,
+        settings: settings,
+        status: "completed",
+        errorMessage: null,
+        createdAt: generation.createdAt,
+        updatedAt: new Date(),
+        images: allImages.map((img) => ({
+          id: img.id,
+          generationId: img.generationId,
+          imageUrl: img.imageUrl,
+          createdAt: img.createdAt,
+        })),
+      };
+
+      const historyResponse: GenerationHistoryEntry[] = updatedHistory.map((h) => ({
+        id: h.id,
+        generationId: h.generationId,
+        role: h.role as "user" | "assistant",
+        content: h.content,
+        imageUrls: h.imageUrls as string[] | null,
+        createdAt: h.createdAt,
+      }));
+
+      return NextResponse.json({
+        generation: generationWithImages,
+        history: historyResponse,
+      });
+    } catch (genError) {
       // Update generation status back to completed (refinement failed but original is still valid)
       await db
         .update(generations)
         .set({ status: "completed" })
         .where(eq(generations.id, id));
 
+      const errorMessage = genError instanceof Error ? genError.message : "Failed to generate refined images";
       return NextResponse.json(
-        {
-          error: result.error || "Failed to generate refined images",
-        },
+        { error: errorMessage },
         { status: 400 }
       );
     }
-
-    // Save new images to storage and database
-    const savedImages = [];
-    for (let i = 0; i < result.images.length; i++) {
-      const img = result.images[i];
-      if (!img) continue;
-
-      // Convert base64 to buffer
-      const buffer = Buffer.from(img.base64, "base64");
-      const extension = img.mimeType.split("/")[1] || "png";
-      const timestamp = Date.now();
-      const filename = `gen-${id}-refine-${i}-${timestamp}.${extension}`;
-
-      // Upload to storage
-      const uploadResult = await upload(buffer, filename, "generations");
-
-      // Save to database
-      const [savedImage] = await db
-        .insert(generatedImages)
-        .values({
-          generationId: id,
-          imageUrl: uploadResult.url,
-          isPublic: false,
-        })
-        .returning();
-
-      if (savedImage) {
-        savedImages.push(savedImage);
-      }
-    }
-
-    // Store the assistant response in history
-    await db.insert(generationHistory).values({
-      generationId: id,
-      role: "assistant",
-      content: result.text || "Generated refined images successfully",
-      imageUrls: savedImages.map((img) => img.imageUrl),
-    });
-
-    // Update generation status back to completed and update the prompt
-    const newPrompt = `${generation.prompt} | Refinement: ${instruction.trim()}`;
-    await db
-      .update(generations)
-      .set({
-        status: "completed",
-        prompt: newPrompt,
-      })
-      .where(eq(generations.id, id));
-
-    // Fetch all images for this generation (including new ones)
-    const allImages = await db
-      .select()
-      .from(generatedImages)
-      .where(eq(generatedImages.generationId, id));
-
-    // Fetch updated history
-    const updatedHistory = await db
-      .select()
-      .from(generationHistory)
-      .where(eq(generationHistory.generationId, id))
-      .orderBy(asc(generationHistory.createdAt));
-
-    // Build response
-    const generationWithImages: GenerationWithImages = {
-      id: generation.id,
-      userId: generation.userId,
-      prompt: newPrompt,
-      settings: settings,
-      status: "completed",
-      errorMessage: null,
-      createdAt: generation.createdAt,
-      updatedAt: new Date(),
-      images: allImages.map((img) => ({
-        id: img.id,
-        generationId: img.generationId,
-        imageUrl: img.imageUrl,
-        isPublic: img.isPublic,
-        createdAt: img.createdAt,
-      })),
-    };
-
-    const historyResponse: GenerationHistoryEntry[] = updatedHistory.map((h) => ({
-      id: h.id,
-      generationId: h.generationId,
-      role: h.role as "user" | "assistant",
-      content: h.content,
-      imageUrls: h.imageUrls as string[] | null,
-      createdAt: h.createdAt,
-    }));
-
-    return NextResponse.json({
-      generation: generationWithImages,
-      history: historyResponse,
-    });
   } catch (error) {
     console.error("Error refining generation:", error);
+    const message = error instanceof Error ? error.message : "Failed to refine generation";
     return NextResponse.json(
-      { error: "Failed to refine generation" },
+      { error: message },
       { status: 500 }
     );
   }

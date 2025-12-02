@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { AlertCircle, XCircle, RefreshCw, Key, ExternalLink } from "lucide-react";
+import { AlertCircle, XCircle, RefreshCw, Server } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -15,47 +14,45 @@ interface GenerationErrorAlertProps {
 function getErrorInfo(error: string): {
   title: string;
   message: string;
-  action?: "api-key" | "retry" | "quota" | "none";
+  action?: "comfyui" | "retry" | "none";
 } {
   const errorLower = error.toLowerCase();
 
-  // API Key errors
+  // ComfyUI not running
   if (
-    errorLower.includes("api key") ||
-    errorLower.includes("invalid key") ||
-    errorLower.includes("unauthorized") ||
-    errorLower.includes("authentication")
+    errorLower.includes("comfyui") ||
+    errorLower.includes("not running") ||
+    errorLower.includes("503")
   ) {
     return {
-      title: "Invalid API Key",
+      title: "ComfyUI Not Running",
       message:
-        "Your Google API key appears to be invalid or expired. Please check your key and try again.",
-      action: "api-key",
+        "ComfyUI server is not available. Please start ComfyUI on port 8000 and try again.",
+      action: "comfyui",
     };
   }
 
-  // Rate limit errors
+  // Workflow execution errors
   if (
-    errorLower.includes("rate limit") ||
-    errorLower.includes("too many requests") ||
-    errorLower.includes("quota exceeded") ||
-    errorLower.includes("429")
+    errorLower.includes("workflow") ||
+    errorLower.includes("execution failed") ||
+    errorLower.includes("node")
   ) {
     return {
-      title: "Rate Limit Exceeded",
+      title: "Workflow Error",
       message:
-        "You've exceeded the API rate limit. Please wait a few minutes before trying again.",
+        "There was an error executing the ComfyUI workflow. Check that all required models are loaded.",
       action: "retry",
     };
   }
 
-  // Quota errors
-  if (errorLower.includes("quota") || errorLower.includes("billing")) {
+  // Timeout errors
+  if (errorLower.includes("timeout") || errorLower.includes("timed out")) {
     return {
-      title: "API Quota Exceeded",
+      title: "Generation Timeout",
       message:
-        "Your Google API quota has been exceeded. Please check your Google Cloud billing settings.",
-      action: "quota",
+        "The generation took too long and timed out. Try reducing the number of steps or image resolution.",
+      action: "retry",
     };
   }
 
@@ -77,13 +74,13 @@ function getErrorInfo(error: string): {
   // Network errors
   if (
     errorLower.includes("network") ||
-    errorLower.includes("timeout") ||
-    errorLower.includes("connection")
+    errorLower.includes("connection") ||
+    errorLower.includes("fetch failed")
   ) {
     return {
       title: "Connection Error",
       message:
-        "There was a problem connecting to the server. Please check your internet connection and try again.",
+        "There was a problem connecting to ComfyUI. Please check that the server is running and try again.",
       action: "retry",
     };
   }
@@ -123,30 +120,16 @@ export function GenerationErrorAlert({
       <AlertDescription className="flex flex-col gap-3">
         <span>{message}</span>
         <div className="flex flex-wrap gap-2">
-          {action === "api-key" && (
-            <Button asChild variant="outline" size="sm" className="gap-2">
-              <Link href="/profile">
-                <Key className="h-4 w-4" />
-                Check API Key
-              </Link>
-            </Button>
+          {action === "comfyui" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Server className="h-4 w-4" />
+              <span>Start ComfyUI: <code className="bg-muted px-1 rounded">python main.py --port 8000</code></span>
+            </div>
           )}
-          {action === "retry" && onRetry && (
+          {(action === "retry" || action === "comfyui") && onRetry && (
             <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
               <RefreshCw className="h-4 w-4" />
               Try Again
-            </Button>
-          )}
-          {action === "quota" && (
-            <Button asChild variant="outline" size="sm" className="gap-2">
-              <a
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Google Cloud Console
-              </a>
             </Button>
           )}
         </div>

@@ -1,22 +1,19 @@
-# Nano Banana Pro
+# ComfyUI Image Generator
 
-An AI-powered image generator application that uses Google's Gemini 3 Pro Image Preview model to create and refine images based on detailed prompts with optional reference images (avatars) for consistent character generation.
+An AI-powered image generator application that uses ComfyUI to create and refine images based on detailed prompts with optional reference images (avatars) for consistent character generation.
 
 ## Features
 
-- **AI Image Generation**: Generate images using Google Gemini 3 Pro with multi-turn conversation support for refinements
+- **AI Image Generation**: Generate images using ComfyUI with multi-turn conversation support for refinements
 - **Prompt Builder**: Intuitive UI to construct detailed prompts with location, lighting, camera angle, style, and subject options
 - **Avatar System**: Upload reference images to maintain consistent characters/objects across generations
-- **Gallery**: Browse and share generated images with the community
-- **Like System**: Like and discover popular images from other users
-- **BYOK (Bring Your Own Key)**: Users provide their own Google AI API key, stored securely with AES-256-GCM encryption
+- **Gallery**: Browse generated images
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router) with React 19
 - **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Better Auth with Google OAuth
-- **AI**: Google Gemini via `@google/genai` SDK
+- **AI**: ComfyUI backend
 - **Storage**: Vercel Blob (production) / local filesystem (development)
 - **UI**: shadcn/ui with Tailwind CSS v4
 
@@ -26,7 +23,6 @@ An AI-powered image generator application that uses Google's Gemini 3 Pro Image 
 
 - Node.js 18+
 - PostgreSQL database
-- Google OAuth credentials
 - pnpm (recommended)
 
 ### Installation
@@ -34,7 +30,7 @@ An AI-powered image generator application that uses Google's Gemini 3 Pro Image 
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd nano-banana-pro
+   cd comfyui-image-generator
    ```
 
 2. Install dependencies:
@@ -50,14 +46,7 @@ An AI-powered image generator application that uses Google's Gemini 3 Pro Image 
 4. Configure your `.env` file:
    ```env
    # Database
-   POSTGRES_URL="postgresql://username:password@localhost:5432/nano_banana"
-
-   # Authentication
-   BETTER_AUTH_SECRET="your-random-32-character-secret-key"
-
-   # Google OAuth
-   GOOGLE_CLIENT_ID="your-google-client-id"
-   GOOGLE_CLIENT_SECRET="your-google-client-secret"
+   POSTGRES_URL="postgresql://username:password@localhost:5432/comfyui_generator"
 
    # App URL
    NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -80,12 +69,10 @@ An AI-powered image generator application that uses Google's Gemini 3 Pro Image 
 
 ## Usage
 
-1. **Sign in** with your Google account
-2. **Add your Google AI API key** in settings (get one from [Google AI Studio](https://aistudio.google.com/apikey))
-3. **Create avatars** by uploading reference images for consistent character generation
-4. **Build your prompt** using the Prompt Builder interface
-5. **Generate images** and refine them with follow-up prompts
-6. **Share to gallery** by making images public for the community to see
+1. **Create avatars** by uploading reference images for consistent character generation
+2. **Build your prompt** using the Prompt Builder interface
+3. **Generate images** and refine them with follow-up prompts
+4. **Browse the gallery** to see all generated images
 
 ## Development Commands
 
@@ -114,22 +101,19 @@ pnpm db:reset         # Drop and recreate all tables
 src/
 ├── app/                      # Next.js app directory
 │   ├── api/                  # API routes
-│   ├── generate/             # Image generation page
-│   ├── gallery/              # Public gallery page
-│   └── dashboard/            # User dashboard
+│   ├── gallery/              # Gallery page
+│   └── avatars/              # Avatar management page
 ├── components/
 │   ├── generate/             # Prompt builder and generation UI
-│   ├── auth/                 # Authentication components
 │   └── ui/                   # shadcn/ui components
 ├── hooks/                    # Custom React hooks
 │   ├── use-avatars.ts        # Avatar management
 │   ├── use-generation.ts     # Image generation logic
 │   └── use-prompt-builder.ts # Prompt builder state
 └── lib/
-    ├── gemini.ts             # Gemini API integration
     ├── schema.ts             # Database schema
     ├── storage.ts            # File storage abstraction
-    └── auth.ts               # Authentication config
+    └── generate-stub.ts      # Stub image generation
 ```
 
 ## Environment Variables
@@ -137,10 +121,7 @@ src/
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `POSTGRES_URL` | Yes | PostgreSQL connection string |
-| `BETTER_AUTH_SECRET` | Yes | 32+ character secret for auth |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
-| `NEXT_PUBLIC_APP_URL` | Yes | Application URL |
+| `NEXT_PUBLIC_APP_URL` | No | Application URL |
 | `BLOB_READ_WRITE_TOKEN` | No | Vercel Blob token (uses local storage if not set) |
 
 ## Deployment

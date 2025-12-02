@@ -1,22 +1,15 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, desc, count } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc, count } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { generations, generatedImages } from "@/lib/schema";
 import type { GenerationSettings, GenerationWithImages, PaginatedResponse } from "@/lib/types/generation";
 
 /**
  * GET /api/generations
- * List user's generations with pagination
+ * List all generations with pagination
  */
 export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Parse pagination params
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -26,22 +19,20 @@ export async function GET(request: Request) {
     // Get total count
     const [totalResult] = await db
       .select({ count: count() })
-      .from(generations)
-      .where(eq(generations.userId, session.user.id));
+      .from(generations);
 
     const total = totalResult?.count || 0;
 
     // Get generations for this page
-    const userGenerations = await db
+    const allGenerations = await db
       .select()
       .from(generations)
-      .where(eq(generations.userId, session.user.id))
       .orderBy(desc(generations.createdAt))
       .limit(pageSize)
       .offset(offset);
 
     // Get all images for these generations
-    const generationIds = userGenerations.map((g) => g.id);
+    const generationIds = allGenerations.map((g) => g.id);
     let images: typeof generatedImages.$inferSelect[] = [];
 
     if (generationIds.length > 0) {
@@ -53,9 +44,8 @@ export async function GET(request: Request) {
     }
 
     // Map generations with their images
-    const generationsWithImages: GenerationWithImages[] = userGenerations.map((gen) => ({
+    const generationsWithImages: GenerationWithImages[] = allGenerations.map((gen) => ({
       id: gen.id,
-      userId: gen.userId,
       prompt: gen.prompt,
       settings: gen.settings as GenerationSettings,
       status: gen.status as "pending" | "processing" | "completed" | "failed",
@@ -68,7 +58,6 @@ export async function GET(request: Request) {
           id: img.id,
           generationId: img.generationId,
           imageUrl: img.imageUrl,
-          isPublic: img.isPublic,
           createdAt: img.createdAt,
         })),
     }));
@@ -78,7 +67,7 @@ export async function GET(request: Request) {
       total,
       page,
       pageSize,
-      hasMore: offset + userGenerations.length < total,
+      hasMore: offset + allGenerations.length < total,
     };
 
     return NextResponse.json(response);

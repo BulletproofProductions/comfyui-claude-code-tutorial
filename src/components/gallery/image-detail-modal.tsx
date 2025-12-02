@@ -5,40 +5,27 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Download, Copy, Check, ExternalLink, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { GalleryImage, GeneratedImage, GenerationSettings } from "@/lib/types/generation";
-import { VisibilityToggle } from "./visibility-toggle";
+import type { GenerationSettings } from "@/lib/types/generation";
 
-interface BaseModalProps {
+// Simplified gallery image type
+interface SimpleGalleryImage {
+  id: string;
+  generationId: string;
+  imageUrl: string;
+  createdAt: Date;
+  generation: {
+    prompt: string;
+    settings: GenerationSettings;
+    createdAt: Date;
+  };
+}
+
+interface ImageDetailModalProps {
+  image: SimpleGalleryImage | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface GalleryImageModalProps extends BaseModalProps {
-  image: GalleryImage | null;
-  showUser?: boolean;
-  showVisibilityToggle?: false;
-}
-
-interface PersonalImageModalProps extends BaseModalProps {
-  image: (GeneratedImage & {
-    generation: {
-      prompt: string;
-      settings: GenerationSettings;
-      createdAt: Date;
-    };
-  }) | null;
-  showUser?: false;
-  showVisibilityToggle?: boolean;
-  onVisibilityChange?: (imageId: string, isPublic: boolean) => void;
-}
-
-type ImageDetailModalProps = GalleryImageModalProps | PersonalImageModalProps;
-
-function isGalleryImage(image: GalleryImageModalProps["image"] | PersonalImageModalProps["image"]): image is GalleryImage {
-  return image !== null && "user" in image;
 }
 
 const subscribe = () => () => {};
@@ -49,13 +36,9 @@ export function ImageDetailModal({
   image,
   open,
   onOpenChange,
-  showUser = false,
-  showVisibilityToggle = false,
-  ...props
 }: ImageDetailModalProps) {
   const [copied, setCopied] = useState(false);
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const onVisibilityChange = "onVisibilityChange" in props ? props.onVisibilityChange : undefined;
 
   useEffect(() => {
     if (open) {
@@ -97,7 +80,7 @@ export function ImageDetailModal({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `nano-banana-${image.id}.png`;
+      a.download = `comfyui-${image.id}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -146,27 +129,11 @@ export function ImageDetailModal({
         {/* Details bar at bottom */}
         <div className="flex-shrink-0 pt-3 pb-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Left side: user/time and settings */}
+            {/* Left side: time and settings */}
             <div className="flex items-center gap-3 text-sm">
-              {showUser && isGalleryImage(image) && (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={image.user.image || undefined} alt={image.user.name} />
-                    <AvatarFallback className="text-xs">
-                      {image.user.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{image.user.name}</span>
-                  <span className="text-muted-foreground">
-                    {formatDistanceToNow(createdAt, { addSuffix: true })}
-                  </span>
-                </div>
-              )}
-              {!showUser && (
-                <span className="text-muted-foreground">
-                  {formatDistanceToNow(createdAt, { addSuffix: true })}
-                </span>
-              )}
+              <span className="text-muted-foreground">
+                {formatDistanceToNow(createdAt, { addSuffix: true })}
+              </span>
               <Badge variant="secondary" className="text-xs">{settings.resolution}</Badge>
               <Badge variant="secondary" className="text-xs">{settings.aspectRatio}</Badge>
             </div>
@@ -190,13 +157,6 @@ export function ImageDetailModal({
                 <ExternalLink className="h-4 w-4" />
                 <span className="hidden sm:inline">Open</span>
               </Button>
-              {showVisibilityToggle && (
-                <VisibilityToggle
-                  imageId={image.id}
-                  isPublic={image.isPublic}
-                  onToggle={onVisibilityChange}
-                />
-              )}
             </div>
           </div>
 

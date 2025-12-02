@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nano Banana Pro is an AI image generator application built on the Agentic Coding Starter Kit. It uses Google's Gemini 3 Pro Image Preview model to generate and refine images based on user prompts with optional reference images (avatars).
+ComfyUI Image Generator is a simplified AI image generator application built on the Agentic Coding Starter Kit. It provides a prompt builder interface for creating images with optional reference images (avatars). The current implementation uses a stub generator that returns placeholder images.
+
+**Note:** This is a simplified single-user public application with no authentication.
 
 ## Development Commands
 
@@ -33,39 +35,30 @@ pnpm db:reset         # Drop and recreate all tables
 ### Tech Stack
 - **Framework:** Next.js 16 (App Router) with React 19
 - **Database:** PostgreSQL with Drizzle ORM
-- **Auth:** Better Auth with Google OAuth
-- **AI:** Google Gemini via `@google/genai` SDK (model: `gemini-3-pro-image-preview`)
 - **Storage:** Vercel Blob (production) / local filesystem (development)
 - **UI:** shadcn/ui with Tailwind CSS v4
 
 ### Core Data Flow
 
-1. **API Keys:** Users store their Google AI API key encrypted (AES-256-GCM) in the `userApiKeys` table. The key is decrypted server-side only when generating images.
-
-2. **Image Generation:**
+1. **Image Generation:**
    - User builds a prompt using the PromptBuilder UI (location, lighting, camera, style, subjects)
    - Subjects can be linked to Avatars (reference images) for consistent character/object generation
-   - `src/lib/gemini.ts` handles API calls with multi-turn conversation support for refinements
+   - `src/lib/generate-stub.ts` provides stub generation (returns placeholder images)
    - Generated images are stored via the storage abstraction and tracked in `generations`/`generatedImages` tables
 
-3. **Gallery System:**
-   - Users can toggle images public/private via `isPublic` flag
-   - Public gallery shows community images with like functionality
-   - Like counts tracked in `imageLikes` table
+2. **Gallery System:**
+   - Single public gallery showing all generated images
+   - Search functionality by prompt text
+   - No user-specific features (all images are public)
 
 ### Key Directories
 
-- `src/app/generate/` - Main generation UI with three-column layout (PromptBuilder, Preview, Results)
+- `src/app/` - Pages: `/` (generate), `/gallery`, `/avatars`
 - `src/components/generate/` - Generation-specific components including prompt builder and results panels
-- `src/hooks/` - Custom hooks for avatars, generation, presets, API key, and prompt builder state
-- `src/lib/gemini.ts` - Gemini API integration with reference image support
-- `src/lib/schema.ts` - Drizzle schema (extends base auth tables with: `userApiKeys`, `avatars`, `presets`, `generations`, `generatedImages`, `generationHistory`, `imageLikes`)
+- `src/hooks/` - Custom hooks for avatars, generation, presets, and prompt builder state
+- `src/lib/generate-stub.ts` - Stub image generation (placeholder implementation)
+- `src/lib/schema.ts` - Drizzle schema (`avatars`, `presets`, `generations`, `generatedImages`, `generationHistory`)
 - `src/lib/types/generation.ts` - TypeScript types for generation system
-
-### Authentication Pattern
-
-Server-side: Use `getSession()` from `src/lib/session.ts`
-Client-side: Use `useSession()` from `src/lib/auth-client.ts`
 
 ### Storage Abstraction
 
@@ -75,9 +68,6 @@ Client-side: Use `useSession()` from `src/lib/auth-client.ts`
 
 Required:
 - `POSTGRES_URL` - PostgreSQL connection string
-- `BETTER_AUTH_SECRET` - 32+ char secret for auth
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth credentials
-- `NEXT_PUBLIC_APP_URL` - App URL (used for image fetching in Gemini API calls)
 
 Optional:
 - `BLOB_READ_WRITE_TOKEN` - Enables Vercel Blob storage (otherwise uses local)

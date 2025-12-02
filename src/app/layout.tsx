@@ -18,35 +18,35 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Nano Banana Pro",
-    template: "%s | Nano Banana Pro",
+    default: "ComfyUI Image Generator",
+    template: "%s | ComfyUI Image Generator",
   },
   description:
-    "AI-powered image generation using Gemini. Create stunning images with text-to-image and image-to-image capabilities, customizable prompts, and reusable avatars.",
+    "AI-powered image generation using ComfyUI. Create stunning images with text-to-image and image-to-image capabilities, customizable prompts, and reusable avatars.",
   keywords: [
     "AI Image Generation",
-    "Gemini",
+    "ComfyUI",
     "Text to Image",
     "Image Generation",
-    "Nano Banana Pro",
+    "ComfyUI Image Generator",
     "Next.js",
     "React",
   ],
-  authors: [{ name: "Nano Banana Pro" }],
-  creator: "Nano Banana Pro",
+  authors: [{ name: "ComfyUI Image Generator" }],
+  creator: "ComfyUI Image Generator",
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Nano Banana Pro",
-    title: "Nano Banana Pro",
+    siteName: "ComfyUI Image Generator",
+    title: "ComfyUI Image Generator",
     description:
-      "AI-powered image generation using Gemini. Create stunning images with customizable prompts.",
+      "AI-powered image generation using ComfyUI. Create stunning images with customizable prompts.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nano Banana Pro",
+    title: "ComfyUI Image Generator",
     description:
-      "AI-powered image generation using Gemini. Create stunning images with customizable prompts.",
+      "AI-powered image generation using ComfyUI. Create stunning images with customizable prompts.",
   },
   robots: {
     index: true,
@@ -58,9 +58,9 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Nano Banana Pro",
+  name: "ComfyUI Image Generator",
   description:
-    "AI-powered image generation using Gemini. Create stunning images with text-to-image and image-to-image capabilities.",
+    "AI-powered image generation using ComfyUI. Create stunning images with text-to-image and image-to-image capabilities.",
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Any",
   offers: {
@@ -70,7 +70,7 @@ const jsonLd = {
   },
   author: {
     "@type": "Organization",
-    name: "Nano Banana Pro",
+    name: "ComfyUI Image Generator",
   },
 };
 

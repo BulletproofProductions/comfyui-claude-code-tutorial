@@ -1,19 +1,23 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { eq, inArray } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { comfyui, getResolutionDimensions } from "@/lib/comfyui";
 import { db } from "@/lib/db";
-import { generateWithUserKey, type ReferenceImage } from "@/lib/gemini";
 import { generations, generatedImages, generationHistory, avatars } from "@/lib/schema";
-import { upload } from "@/lib/storage";
+import { upload, readFromStorage } from "@/lib/storage";
 import type {
   GenerationSettings,
   AvatarType,
   GenerationWithImages,
+  ImageResolution,
+  AspectRatio,
 } from "@/lib/types/generation";
 
-// Maximum duration for Vercel Hobby plan is 60 seconds
-export const maxDuration = 60;
+
+interface ReferenceImage {
+  imageUrl: string;
+  type: AvatarType;
+  name: string;
+}
 
 interface GenerateRequestBody {
   prompt: string;
@@ -26,15 +30,10 @@ interface GenerateRequestBody {
 
 /**
  * POST /api/generate
- * Start a new image generation
+ * Start a new image generation using ComfyUI
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = (await request.json()) as GenerateRequestBody;
     const { prompt, settings, referenceImages = [] } = body;
 
@@ -79,6 +78,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate optional ComfyUI settings
+    if (settings.steps !== undefined && (settings.steps < 1 || settings.steps > 50)) {
+      return NextResponse.json(
+        { error: "Steps must be between 1 and 50" },
+        { status: 400 }
+      );
+    }
+
+    if (settings.guidance !== undefined && (settings.guidance < 1 || settings.guidance > 10)) {
+      return NextResponse.json(
+        { error: "Guidance must be between 1 and 10" },
+        { status: 400 }
+      );
+    }
+
+    // Check if ComfyUI is available
+    const isComfyUIAvailable = await comfyui.healthCheck();
+    if (!isComfyUIAvailable) {
+      return NextResponse.json(
+        { error: "ComfyUI server is not running. Please start ComfyUI and try again." },
+        { status: 503 }
+      );
+    }
+
     // Get avatar details for reference images
     let avatarDetails: ReferenceImage[] = [];
     if (referenceImages.length > 0) {
@@ -106,7 +129,6 @@ export async function POST(request: Request) {
     const [generation] = await db
       .insert(generations)
       .values({
-        userId: session.user.id,
         prompt: prompt.trim(),
         settings: settings,
         status: "processing",
@@ -128,110 +150,153 @@ export async function POST(request: Request) {
       imageUrls: avatarDetails.map((a) => a.imageUrl),
     });
 
-    // Generate images using Gemini
-    const result = await generateWithUserKey(session.user.id, prompt.trim(), {
-      resolution: settings.resolution,
-      aspectRatio: settings.aspectRatio,
-      imageCount: settings.imageCount || 1,
-      referenceImages: avatarDetails,
-    });
+    try {
+      // Get dimensions from resolution and aspect ratio
+      const { width, height } = getResolutionDimensions(
+        settings.resolution as ImageResolution,
+        settings.aspectRatio as AspectRatio
+      );
 
-    if (!result.success || result.images.length === 0) {
+      // Upload reference image to ComfyUI if provided
+      let referenceImageFilename: string | undefined;
+      if (avatarDetails.length > 0 && avatarDetails[0]) {
+        const refImage = avatarDetails[0];
+        // Read the reference image from storage
+        const imageBuffer = await readFromStorage(refImage.imageUrl);
+        const uploadResult = await comfyui.uploadImage(
+          imageBuffer,
+          `ref-${generation.id}-${Date.now()}.png`
+        );
+        referenceImageFilename = uploadResult.name;
+      }
+
+      // Generate images (loop for imageCount)
+      const imageCount = settings.imageCount || 1;
+      const savedImages = [];
+
+      for (let i = 0; i < imageCount; i++) {
+        // Build the workflow
+        const workflow = comfyui.buildFlux2Workflow({
+          prompt: prompt.trim(),
+          width,
+          height,
+          steps: settings.steps,
+          guidance: settings.guidance,
+          seed: settings.seed !== undefined ? settings.seed + i : undefined, // Increment seed for each image
+          referenceImageFilename,
+        });
+
+        // Queue the prompt
+        const queueResult = await comfyui.queuePrompt(workflow);
+
+        // Wait for completion
+        const history = await comfyui.waitForCompletion(queueResult.prompt_id);
+
+        // Get the generated images from the output
+        const outputNode = Object.values(history.outputs).find((output) => output.images?.length);
+        if (!outputNode?.images?.length) {
+          throw new Error("No images in generation output");
+        }
+
+        // Fetch and save each generated image
+        for (const imageInfo of outputNode.images) {
+          const imageBuffer = await comfyui.getImage(
+            imageInfo.filename,
+            imageInfo.subfolder,
+            imageInfo.type
+          );
+
+          // Convert buffer to base64 for storage
+          const timestamp = Date.now();
+          const filename = `gen-${generation.id}-${i}-${timestamp}.png`;
+
+          // Upload to storage
+          const uploadResult = await upload(imageBuffer, filename, "generations");
+
+          // Save to database
+          const [savedImage] = await db
+            .insert(generatedImages)
+            .values({
+              generationId: generation.id,
+              imageUrl: uploadResult.url,
+            })
+            .returning();
+
+          if (savedImage) {
+            savedImages.push(savedImage);
+          }
+        }
+      }
+
+      if (savedImages.length === 0) {
+        throw new Error("No images were generated");
+      }
+
+      // Store the assistant response in history
+      await db.insert(generationHistory).values({
+        generationId: generation.id,
+        role: "assistant",
+        content: `Generated ${savedImages.length} image(s) successfully`,
+        imageUrls: savedImages.map((img) => img.imageUrl),
+      });
+
+      // Update generation status to completed
+      await db
+        .update(generations)
+        .set({ status: "completed" })
+        .where(eq(generations.id, generation.id));
+
+      // Fetch the updated generation with images
+      const [updatedGeneration] = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.id, generation.id));
+
+      const generationWithImages: GenerationWithImages = {
+        id: updatedGeneration!.id,
+        prompt: updatedGeneration!.prompt,
+        settings: updatedGeneration!.settings as GenerationSettings,
+        status: "completed",
+        errorMessage: null,
+        createdAt: updatedGeneration!.createdAt,
+        updatedAt: updatedGeneration!.updatedAt,
+        images: savedImages.map((img) => ({
+          id: img.id,
+          generationId: img.generationId,
+          imageUrl: img.imageUrl,
+          createdAt: img.createdAt,
+        })),
+      };
+
+      return NextResponse.json({ generation: generationWithImages }, { status: 201 });
+    } catch (genError) {
       // Update generation status to failed
+      const errorMessage = genError instanceof Error ? genError.message : "Generation failed";
       await db
         .update(generations)
         .set({
           status: "failed",
-          errorMessage: result.error || "No images generated",
+          errorMessage: errorMessage,
         })
         .where(eq(generations.id, generation.id));
 
       return NextResponse.json(
         {
-          error: result.error || "No images generated",
+          error: errorMessage,
           generation: {
             id: generation.id,
             status: "failed",
-            errorMessage: result.error,
+            errorMessage: errorMessage,
           },
         },
         { status: 400 }
       );
     }
-
-    // Save generated images to storage and database
-    const savedImages = [];
-    for (let i = 0; i < result.images.length; i++) {
-      const img = result.images[i];
-      if (!img) continue;
-
-      // Convert base64 to buffer
-      const buffer = Buffer.from(img.base64, "base64");
-      const extension = img.mimeType.split("/")[1] || "png";
-      const timestamp = Date.now();
-      const filename = `gen-${generation.id}-${i}-${timestamp}.${extension}`;
-
-      // Upload to storage
-      const uploadResult = await upload(buffer, filename, "generations");
-
-      // Save to database
-      const [savedImage] = await db
-        .insert(generatedImages)
-        .values({
-          generationId: generation.id,
-          imageUrl: uploadResult.url,
-          isPublic: false,
-        })
-        .returning();
-
-      if (savedImage) {
-        savedImages.push(savedImage);
-      }
-    }
-
-    // Store the assistant response in history
-    await db.insert(generationHistory).values({
-      generationId: generation.id,
-      role: "assistant",
-      content: result.text || "Generated images successfully",
-      imageUrls: savedImages.map((img) => img.imageUrl),
-    });
-
-    // Update generation status to completed
-    await db
-      .update(generations)
-      .set({ status: "completed" })
-      .where(eq(generations.id, generation.id));
-
-    // Fetch the updated generation with images
-    const [updatedGeneration] = await db
-      .select()
-      .from(generations)
-      .where(eq(generations.id, generation.id));
-
-    const generationWithImages: GenerationWithImages = {
-      id: updatedGeneration!.id,
-      userId: updatedGeneration!.userId,
-      prompt: updatedGeneration!.prompt,
-      settings: updatedGeneration!.settings as GenerationSettings,
-      status: "completed",
-      errorMessage: null,
-      createdAt: updatedGeneration!.createdAt,
-      updatedAt: updatedGeneration!.updatedAt,
-      images: savedImages.map((img) => ({
-        id: img.id,
-        generationId: img.generationId,
-        imageUrl: img.imageUrl,
-        isPublic: img.isPublic,
-        createdAt: img.createdAt,
-      })),
-    };
-
-    return NextResponse.json({ generation: generationWithImages }, { status: 201 });
   } catch (error) {
     console.error("Error generating images:", error);
+    const message = error instanceof Error ? error.message : "Failed to generate images";
     return NextResponse.json(
-      { error: "Failed to generate images" },
+      { error: message },
       { status: 500 }
     );
   }

@@ -1,29 +1,37 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { Search, TrendingUp, Users, Sparkles } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { GalleryImage, PaginatedResponse, TopContributor } from "@/lib/types/generation";
+import type { GenerationSettings, PaginatedResponse } from "@/lib/types/generation";
 import { GalleryGrid } from "./gallery-grid";
 import { ImageCard } from "./image-card";
 import { ImageDetailModal } from "./image-detail-modal";
 
+// Simplified gallery image type
+interface SimpleGalleryImage {
+  id: string;
+  generationId: string;
+  imageUrl: string;
+  createdAt: Date;
+  generation: {
+    prompt: string;
+    settings: GenerationSettings;
+    createdAt: Date;
+  };
+}
+
 export function PublicGalleryClient() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [mostLikedImages, setMostLikedImages] = useState<GalleryImage[]>([]);
-  const [topContributors, setTopContributors] = useState<TopContributor[]>([]);
+  const [images, setImages] = useState<SimpleGalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<SimpleGalleryImage | null>(null);
   const pageSize = 20;
 
   // Debounce search
@@ -35,33 +43,7 @@ export function PublicGalleryClient() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch featured sections (most liked and top contributors)
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const [mostLikedRes, contributorsRes] = await Promise.all([
-          fetch("/api/gallery/most-liked?limit=8"),
-          fetch("/api/gallery/top-contributors?limit=5"),
-        ]);
-
-        if (mostLikedRes.ok) {
-          const data = await mostLikedRes.json();
-          setMostLikedImages(data.images);
-        }
-
-        if (contributorsRes.ok) {
-          const data = await contributorsRes.json();
-          setTopContributors(data.contributors);
-        }
-      } catch (error) {
-        console.error("Error fetching featured sections:", error);
-      }
-    };
-
-    fetchFeatured();
-  }, []);
-
-  // Fetch public gallery images
+  // Fetch gallery images
   const fetchImages = useCallback(async (pageNum: number, searchQuery: string, isInitial: boolean) => {
     if (isInitial) {
       setLoading(true);
@@ -81,7 +63,7 @@ export function PublicGalleryClient() {
       const response = await fetch(`/api/gallery/public?${params}`);
       if (!response.ok) throw new Error("Failed to fetch images");
 
-      const data: PaginatedResponse<GalleryImage> = await response.json();
+      const data: PaginatedResponse<SimpleGalleryImage> = await response.json();
 
       if (isInitial) {
         setImages(data.items);
@@ -91,7 +73,7 @@ export function PublicGalleryClient() {
       setTotal(data.total);
       setHasMore(data.hasMore);
     } catch (error) {
-      console.error("Error fetching public gallery:", error);
+      console.error("Error fetching gallery:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -112,26 +94,6 @@ export function PublicGalleryClient() {
     }
   };
 
-  // Handle like changes
-  const handleLikeChange = (imageId: string, isLiked: boolean, likeCount: number) => {
-    setImages((prev) =>
-      prev.map((img) =>
-        img.id === imageId ? { ...img, isLikedByUser: isLiked, likeCount } : img
-      )
-    );
-    setMostLikedImages((prev) =>
-      prev.map((img) =>
-        img.id === imageId ? { ...img, isLikedByUser: isLiked, likeCount } : img
-      )
-    );
-    // Update selected image if it's the one being liked
-    if (selectedImage?.id === imageId) {
-      setSelectedImage((prev) =>
-        prev ? { ...prev, isLikedByUser: isLiked, likeCount } : null
-      );
-    }
-  };
-
   return (
     <div className="space-y-8">
       {/* Search Bar */}
@@ -144,75 +106,6 @@ export function PublicGalleryClient() {
           className="pl-10"
         />
       </div>
-
-      {/* Only show featured sections when not searching */}
-      {!debouncedSearch && (
-        <>
-          {/* Most Liked Section */}
-          {mostLikedImages.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="h-5 w-5 text-red-500" />
-                <h2 className="text-xl font-semibold">Most Liked</h2>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {mostLikedImages.slice(0, 8).map((image) => (
-                  <ImageCard
-                    key={image.id}
-                    image={image}
-                    showUser
-                    showLikes
-                    onClick={() => setSelectedImage(image)}
-                    onLikeChange={handleLikeChange}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Top Contributors Section */}
-          {topContributors.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="h-5 w-5 text-blue-500" />
-                <h2 className="text-xl font-semibold">Top Contributors</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {topContributors.map((contributor, index) => (
-                  <Link key={contributor.user.id} href={`/gallery/user/${contributor.user.id}`}>
-                    <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-                      <CardContent className="p-4 flex items-center gap-3">
-                        <div className="relative">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage
-                              src={contributor.user.image || undefined}
-                              alt={contributor.user.name}
-                            />
-                            <AvatarFallback>
-                              {contributor.user.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {index < 3 && (
-                            <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-yellow-500 text-white text-xs font-bold rounded-full">
-                              {index + 1}
-                            </span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{contributor.user.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {contributor.totalImages} images · {contributor.totalLikes} likes
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
 
       {/* All Images Section */}
       <section>
@@ -232,17 +125,14 @@ export function PublicGalleryClient() {
           emptyMessage={
             debouncedSearch
               ? `No images found for "${debouncedSearch}"`
-              : "No public images yet. Be the first to share!"
+              : "No images yet. Generate some!"
           }
         >
           {images.map((image) => (
             <ImageCard
               key={image.id}
               image={image}
-              showUser
-              showLikes
               onClick={() => setSelectedImage(image)}
-              onLikeChange={handleLikeChange}
             />
           ))}
         </GalleryGrid>
@@ -266,7 +156,6 @@ export function PublicGalleryClient() {
         image={selectedImage}
         open={!!selectedImage}
         onOpenChange={(open) => !open && setSelectedImage(null)}
-        showUser
       />
     </div>
   );

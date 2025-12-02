@@ -18,11 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAvatars } from "@/hooks/use-avatars";
-import { useSession } from "@/lib/auth-client";
 import type { Avatar, AvatarType } from "@/lib/types/generation";
 
 export default function AvatarsPage() {
-  const { data: session, isPending: sessionPending } = useSession();
   const router = useRouter();
   const { avatars, isLoading, createAvatar, updateAvatar, deleteAvatar } = useAvatars();
 
@@ -109,20 +107,6 @@ export default function AvatarsPage() {
     setFormModalOpen(open);
   };
 
-  // Auth check
-  if (sessionPending) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    router.push("/");
-    return null;
-  }
-
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4">
       {/* Header */}
@@ -138,7 +122,7 @@ export default function AvatarsPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Your Avatars</h1>
+            <h1 className="text-3xl font-bold">Avatars</h1>
             <p className="text-muted-foreground">
               Manage your reference images for AI generation
             </p>

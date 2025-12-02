@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, ExternalLink, Trash2, Globe, Lock } from "lucide-react";
+import { Download, ExternalLink, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,6 @@ import type { GeneratedImage } from "@/lib/types/generation";
 interface ImageCardProps {
   image: GeneratedImage;
   onDelete?: (id: string) => void;
-  onToggleVisibility?: (id: string, isPublic: boolean) => void;
   showActions?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
@@ -32,13 +31,11 @@ interface ImageCardProps {
 export function ImageCard({
   image,
   onDelete,
-  onToggleVisibility,
   showActions = true,
   isSelected = false,
   onSelect,
 }: ImageCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
 
   const handleDownload = async () => {
     try {
@@ -68,16 +65,6 @@ export function ImageCard({
       await onDelete(image.id);
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleToggleVisibility = async () => {
-    if (!onToggleVisibility) return;
-    setIsTogglingVisibility(true);
-    try {
-      await onToggleVisibility(image.id, !image.isPublic);
-    } finally {
-      setIsTogglingVisibility(false);
     }
   };
 
@@ -126,26 +113,6 @@ export function ImageCard({
                 <ExternalLink className="h-4 w-4" />
               </Button>
 
-              {onToggleVisibility && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleVisibility();
-                  }}
-                  disabled={isTogglingVisibility}
-                  className="flex-1"
-                  title={image.isPublic ? "Make private" : "Make public"}
-                >
-                  {image.isPublic ? (
-                    <Globe className="h-4 w-4" />
-                  ) : (
-                    <Lock className="h-4 w-4" />
-                  )}
-                </Button>
-              )}
-
               {onDelete && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -181,16 +148,6 @@ export function ImageCard({
             </div>
           </div>
         )}
-
-        {/* Visibility badge */}
-        <div className="absolute top-2 right-2">
-          {image.isPublic ? (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/80 text-white">
-              <Globe className="h-3 w-3 mr-1" />
-              Public
-            </span>
-          ) : null}
-        </div>
       </CardContent>
     </Card>
   );

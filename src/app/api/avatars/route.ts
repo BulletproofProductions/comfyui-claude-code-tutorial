@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { avatars } from "@/lib/schema";
 import { upload } from "@/lib/storage";
@@ -9,22 +7,16 @@ import type { Avatar, AvatarType } from "@/lib/types/generation";
 
 /**
  * GET /api/avatars
- * List all avatars for the authenticated user
+ * List all avatars
  */
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userAvatars = await db
+    const allAvatars = await db
       .select()
       .from(avatars)
-      .where(eq(avatars.userId, session.user.id))
       .orderBy(desc(avatars.createdAt));
 
-    return NextResponse.json({ avatars: userAvatars as Avatar[] });
+    return NextResponse.json({ avatars: allAvatars as Avatar[] });
   } catch (error) {
     console.error("Error fetching avatars:", error);
     return NextResponse.json(
@@ -40,11 +32,6 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const description = formData.get("description") as string | null;
@@ -96,7 +83,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const timestamp = Date.now();
     const extension = image.name.split(".").pop() || "png";
-    const filename = `avatar-${session.user.id}-${timestamp}.${extension}`;
+    const filename = `avatar-${timestamp}.${extension}`;
 
     const uploadResult = await upload(buffer, filename, "avatars");
 
@@ -104,7 +91,6 @@ export async function POST(request: Request) {
     const [newAvatar] = await db
       .insert(avatars)
       .values({
-        userId: session.user.id,
         name: name.trim(),
         description: description?.trim() || null,
         avatarType: avatarType,

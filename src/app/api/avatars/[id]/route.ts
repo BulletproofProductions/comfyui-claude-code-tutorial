@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { avatars } from "@/lib/schema";
 import { deleteFile } from "@/lib/storage";
@@ -17,17 +15,12 @@ interface RouteParams {
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     const [avatar] = await db
       .select()
       .from(avatars)
-      .where(and(eq(avatars.id, id), eq(avatars.userId, session.user.id)))
+      .where(eq(avatars.id, id))
       .limit(1);
 
     if (!avatar) {
@@ -50,11 +43,6 @@ export async function GET(_request: Request, { params }: RouteParams) {
  */
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = await request.json();
     const { name, description, avatarType } = body as {
@@ -63,11 +51,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
       avatarType?: AvatarType;
     };
 
-    // Check if avatar exists and belongs to user
+    // Check if avatar exists
     const [existingAvatar] = await db
       .select()
       .from(avatars)
-      .where(and(eq(avatars.id, id), eq(avatars.userId, session.user.id)))
+      .where(eq(avatars.id, id))
       .limit(1);
 
     if (!existingAvatar) {
@@ -112,7 +100,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const [updatedAvatar] = await db
       .update(avatars)
       .set(updateData)
-      .where(and(eq(avatars.id, id), eq(avatars.userId, session.user.id)))
+      .where(eq(avatars.id, id))
       .returning();
 
     return NextResponse.json({ avatar: updatedAvatar as Avatar });
@@ -131,18 +119,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
  */
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     // Get the avatar to delete its image
     const [avatar] = await db
       .select()
       .from(avatars)
-      .where(and(eq(avatars.id, id), eq(avatars.userId, session.user.id)))
+      .where(eq(avatars.id, id))
       .limit(1);
 
     if (!avatar) {
@@ -160,7 +143,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     // Delete the avatar from database
     await db
       .delete(avatars)
-      .where(and(eq(avatars.id, id), eq(avatars.userId, session.user.id)));
+      .where(eq(avatars.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

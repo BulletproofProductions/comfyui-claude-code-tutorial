@@ -9,6 +9,10 @@ import {
   cameraTemplates,
   styleTemplates,
   locationTemplates,
+  moodTemplates,
+  cameraModelTemplates,
+  lensTemplates,
+  colorPaletteTemplates,
 } from "@/lib/data/templates";
 import type { SubjectConfig, Avatar } from "@/lib/types/generation";
 import { SubjectManager } from "./subject-manager";
@@ -21,6 +25,11 @@ interface PromptBuilderPanelProps {
   camera: string;
   style: string;
   customPrompt: string;
+  // FLUX.2 Specific Settings
+  mood: string;
+  cameraModel: string;
+  lens: string;
+  colorPalette: string;
 
   // Setters
   onLocationChange: (value: string) => void;
@@ -28,6 +37,11 @@ interface PromptBuilderPanelProps {
   onCameraChange: (value: string) => void;
   onStyleChange: (value: string) => void;
   onCustomPromptChange: (value: string) => void;
+  // FLUX.2 Specific Setters
+  onMoodChange: (value: string) => void;
+  onCameraModelChange: (value: string) => void;
+  onLensChange: (value: string) => void;
+  onColorPaletteChange: (value: string) => void;
 
   // Subject management
   subjects: SubjectConfig[];
@@ -43,11 +57,19 @@ export function PromptBuilderPanel({
   camera,
   style,
   customPrompt,
+  mood,
+  cameraModel,
+  lens,
+  colorPalette,
   onLocationChange,
   onLightingChange,
   onCameraChange,
   onStyleChange,
   onCustomPromptChange,
+  onMoodChange,
+  onCameraModelChange,
+  onLensChange,
+  onColorPaletteChange,
   subjects,
   onAddSubject,
   onRemoveSubject,
@@ -105,6 +127,51 @@ export function PromptBuilderPanel({
               value={camera}
               onChange={onCameraChange}
               placeholder="Select or type camera angle..."
+            />
+          </div>
+
+          <Separator />
+
+          {/* FLUX.2 Photography Settings */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              Photography Settings
+            </h3>
+
+            {/* Camera Model */}
+            <TemplateSelector
+              label="Camera Model"
+              templates={cameraModelTemplates}
+              value={cameraModel}
+              onChange={onCameraModelChange}
+              placeholder="Select or type camera model..."
+            />
+
+            {/* Lens */}
+            <TemplateSelector
+              label="Lens"
+              templates={lensTemplates}
+              value={lens}
+              onChange={onLensChange}
+              placeholder="Select or type lens..."
+            />
+
+            {/* Mood */}
+            <TemplateSelector
+              label="Mood / Atmosphere"
+              templates={moodTemplates}
+              value={mood}
+              onChange={onMoodChange}
+              placeholder="Select or type mood..."
+            />
+
+            {/* Color Palette */}
+            <TemplateSelector
+              label="Color Palette"
+              templates={colorPaletteTemplates}
+              value={colorPalette}
+              onChange={onColorPaletteChange}
+              placeholder="Select or type color palette..."
             />
           </div>
 

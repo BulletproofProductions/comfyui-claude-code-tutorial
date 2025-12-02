@@ -1,31 +1,22 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { presets } from "@/lib/schema";
 import type { Preset, CreatePresetInput, PresetConfig } from "@/lib/types/generation";
 
 /**
  * GET /api/presets
- * List all presets for the authenticated user
+ * List all presets
  */
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userPresets = await db
+    const allPresets = await db
       .select()
       .from(presets)
-      .where(eq(presets.userId, session.user.id))
       .orderBy(desc(presets.createdAt));
 
-    const formattedPresets: Preset[] = userPresets.map((p) => ({
+    const formattedPresets: Preset[] = allPresets.map((p) => ({
       id: p.id,
-      userId: p.userId,
       name: p.name,
       config: p.config as PresetConfig,
       createdAt: p.createdAt,
@@ -48,11 +39,6 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = (await request.json()) as CreatePresetInput;
     const { name, config } = body;
 
@@ -83,7 +69,6 @@ export async function POST(request: Request) {
     const [newPreset] = await db
       .insert(presets)
       .values({
-        userId: session.user.id,
         name: name.trim(),
         config: config,
       })
@@ -98,7 +83,6 @@ export async function POST(request: Request) {
 
     const formattedPreset: Preset = {
       id: newPreset.id,
-      userId: newPreset.userId,
       name: newPreset.name,
       config: newPreset.config as PresetConfig,
       createdAt: newPreset.createdAt,

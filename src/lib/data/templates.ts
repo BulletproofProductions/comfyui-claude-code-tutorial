@@ -189,6 +189,55 @@ export const lightingTemplates: Template[] = [
     description: "Filtered blue-green aquatic lighting",
     promptFragment: "underwater lighting, caustic patterns, blue-green tones, aquatic ambiance",
   },
+  // FLUX.2 Specific Lighting
+  {
+    id: "lighting-three-point-softbox",
+    name: "Three-Point Softbox",
+    description: "Professional three-point softbox setup for even illumination",
+    promptFragment: "three-point softbox setup creating soft, diffused highlights with no harsh shadows",
+  },
+  {
+    id: "lighting-harsh-flash",
+    name: "Harsh Flash",
+    description: "Direct flash photography with high exposure",
+    promptFragment: "direct flash, high exposure, harsh flash lighting, sharp details visible",
+  },
+  {
+    id: "lighting-editorial-flash",
+    name: "Editorial Flash",
+    description: "Cinematic harsh flash for editorial portraits",
+    promptFragment: "cinematic harsh flash lighting, editorial raw portrait, intimate documentary style",
+  },
+  {
+    id: "lighting-cross-processed",
+    name: "Cross-Processed",
+    description: "Cross-processed film look with color shifts",
+    promptFragment: "cross-processed lighting, extreme color shifts, cyan-magenta split, oversaturated",
+  },
+  {
+    id: "lighting-film-set",
+    name: "Film Set Lighting",
+    description: "Professional movie set lighting setup",
+    promptFragment: "film set lighting, professional cinema lighting, multiple light sources, controlled exposure",
+  },
+  {
+    id: "lighting-beauty-dish",
+    name: "Beauty Dish",
+    description: "Soft yet contrasty beauty lighting",
+    promptFragment: "beauty dish lighting, soft contrast, wraparound light, fashion photography",
+  },
+  {
+    id: "lighting-key-fill",
+    name: "Key and Fill",
+    description: "Classic two-light portrait setup",
+    promptFragment: "key and fill lighting, balanced illumination, portrait lighting setup",
+  },
+  {
+    id: "lighting-practical",
+    name: "Practical Lighting",
+    description: "Using in-scene light sources",
+    promptFragment: "practical lighting, natural in-scene lights, realistic illumination, ambient sources",
+  },
 ];
 
 // ==========================================
@@ -393,6 +442,73 @@ export const cameraTemplates: Template[] = [
     description: "Both foreground and background in focus",
     promptFragment: "split diopter effect, dual focus planes, foreground and background sharp",
   },
+  // FLUX.2 Camera Settings
+  {
+    id: "camera-f1-4",
+    name: "Wide Aperture (f/1.4)",
+    description: "Very shallow depth of field with extreme bokeh",
+    promptFragment: "f/1.4 aperture, extremely shallow depth of field, creamy bokeh, subject isolation",
+  },
+  {
+    id: "camera-f2-8",
+    name: "Portrait Aperture (f/2.8)",
+    description: "Classic portrait depth of field",
+    promptFragment: "f/2.8 aperture, shallow depth of field, smooth background blur, portrait quality",
+  },
+  {
+    id: "camera-f5-6",
+    name: "Balanced Aperture (f/5.6)",
+    description: "Good balance between sharpness and depth",
+    promptFragment: "f/5.6 aperture, balanced depth of field, sharp subject with soft background",
+  },
+  {
+    id: "camera-f8",
+    name: "Sharp Aperture (f/8)",
+    description: "Maximum sharpness across the frame",
+    promptFragment: "f/8 aperture, optimal sharpness, detailed rendering, professional quality",
+  },
+  {
+    id: "camera-f11",
+    name: "Landscape Aperture (f/11)",
+    description: "Deep focus for landscapes and architecture",
+    promptFragment: "f/11 aperture, deep focus, front to back sharpness, landscape photography",
+  },
+  {
+    id: "camera-golden-ratio",
+    name: "Golden Ratio",
+    description: "Composition based on golden spiral",
+    promptFragment: "golden ratio composition, golden spiral framing, naturally balanced",
+  },
+  {
+    id: "camera-diagonal",
+    name: "Diagonal Composition",
+    description: "Dynamic diagonal lines in frame",
+    promptFragment: "diagonal composition, dynamic angles, visual tension, energetic framing",
+  },
+  {
+    id: "camera-fill-frame",
+    name: "Fill the Frame",
+    description: "Subject fills entire frame",
+    promptFragment: "fill the frame composition, tight framing, impactful close view, no wasted space",
+  },
+  {
+    id: "camera-layers",
+    name: "Layered Composition",
+    description: "Foreground, middle, background layers",
+    promptFragment: "layered composition, foreground interest, middle ground subject, background depth",
+  },
+  {
+    id: "camera-motion-blur",
+    name: "Motion Blur",
+    description: "Intentional movement blur effect",
+    promptFragment: "motion blur, movement captured, dynamic blur, slow shutter effect",
+  },
+  {
+    id: "camera-freeze-motion",
+    name: "Frozen Motion",
+    description: "Sharp capture of fast movement",
+    promptFragment: "frozen motion, high shutter speed, crisp action, sharp movement capture",
+  },
 ];
 
 // ==========================================
@@ -423,6 +539,115 @@ export const styleTemplates: Template[] = [
     name: "Film Photography",
     description: "Analog film aesthetic with grain",
     promptFragment: "film photography, analog film, natural grain, nostalgic color tones",
+  },
+  // FLUX.2 Era-Specific Photography Styles
+  {
+    id: "style-modern-digital",
+    name: "Modern Digital",
+    description: "Clean, sharp contemporary digital photography",
+    promptFragment: "shot on modern digital camera, clean sharp, high dynamic range, contemporary look",
+  },
+  {
+    id: "style-2000s-digicam",
+    name: "2000s Digicam",
+    description: "Early digital camera aesthetic with candid feel",
+    promptFragment: "early digital camera, slight noise, flash photography, candid, 2000s digicam style",
+  },
+  {
+    id: "style-80s-vintage-photo",
+    name: "80s Vintage Photo",
+    description: "1980s film photography with warm cast",
+    promptFragment: "film grain, warm color cast, soft focus, 80s vintage photo, nostalgic",
+  },
+  {
+    id: "style-analog-film",
+    name: "Analog Film",
+    description: "Classic film stock look with organic colors",
+    promptFragment: "shot on analog film, natural grain, organic colors, film stock aesthetic",
+  },
+  {
+    id: "style-kodak-portra",
+    name: "Kodak Portra 400",
+    description: "Warm, natural skin tones with fine grain",
+    promptFragment: "shot on Kodak Portra 400, natural grain, warm skin tones, organic colors, film photography",
+  },
+  {
+    id: "style-kodak-gold",
+    name: "Kodak Gold 200",
+    description: "Warm golden tones with classic consumer film look",
+    promptFragment: "shot on Kodak Gold 200, golden warm tones, consumer film aesthetic, nostalgic colors",
+  },
+  {
+    id: "style-kodak-ektar",
+    name: "Kodak Ektar 100",
+    description: "Vivid colors with fine grain for landscapes",
+    promptFragment: "shot on Kodak Ektar 100, vivid saturated colors, fine grain, ultra-sharp",
+  },
+  {
+    id: "style-fuji-superia",
+    name: "Fuji Superia 400",
+    description: "Cool tones with punchy colors",
+    promptFragment: "shot on Fuji Superia 400, cool tones, punchy colors, consumer film look",
+  },
+  {
+    id: "style-fuji-velvia",
+    name: "Fuji Velvia 50",
+    description: "Highly saturated slide film for landscapes",
+    promptFragment: "shot on Fuji Velvia 50, extremely saturated colors, rich contrast, slide film, vivid",
+  },
+  {
+    id: "style-ilford-hp5",
+    name: "Ilford HP5 Plus",
+    description: "Classic black and white with beautiful grain",
+    promptFragment: "shot on Ilford HP5 Plus 400, black and white, beautiful grain structure, classic monochrome",
+  },
+  {
+    id: "style-cinestill-800t",
+    name: "CineStill 800T",
+    description: "Cinematic tungsten film with halation",
+    promptFragment: "shot on CineStill 800T, tungsten balanced, red halation around highlights, cinematic film look",
+  },
+  {
+    id: "style-expired-film",
+    name: "Expired Film",
+    description: "Degraded film with unpredictable color shifts",
+    promptFragment: "expired film, color shifts, unpredictable tones, degraded emulsion, vintage decay",
+  },
+  {
+    id: "style-cross-processed",
+    name: "Cross-Processed",
+    description: "Slide film processed as negative with extreme colors",
+    promptFragment: "cross-processed, extreme color shifts, high contrast, unconventional colors, experimental",
+  },
+  {
+    id: "style-instant-polaroid",
+    name: "Polaroid Instant",
+    description: "Classic instant camera aesthetic",
+    promptFragment: "Polaroid instant photo, unique color palette, soft edges, nostalgic instant film",
+  },
+  {
+    id: "style-instax",
+    name: "Fuji Instax",
+    description: "Modern instant film look",
+    promptFragment: "Fuji Instax style, bright colors, slightly overexposed, modern instant film",
+  },
+  {
+    id: "style-daguerreotype",
+    name: "Daguerreotype",
+    description: "Early photography process look",
+    promptFragment: "daguerreotype style, silver plate, early photography, historical process, mirror-like surface",
+  },
+  {
+    id: "style-tintype",
+    name: "Tintype",
+    description: "Civil War era photography aesthetic",
+    promptFragment: "tintype photograph, wet plate collodion, dark tones, Civil War era, historical portrait",
+  },
+  {
+    id: "style-lomography",
+    name: "Lomography",
+    description: "Lo-fi, experimental analog photography",
+    promptFragment: "lomography style, vignette, light leaks, saturated colors, lo-fi aesthetic, experimental",
   },
   // 3D & CGI
   {
@@ -2288,6 +2513,700 @@ export const expressionTemplates: Template[] = [
 ];
 
 // ==========================================
+// Mood/Atmosphere Templates (FLUX.2)
+// ==========================================
+export const moodTemplates: Template[] = [
+  // Positive Moods
+  {
+    id: "mood-clean",
+    name: "Clean & Professional",
+    description: "Polished, professional atmosphere",
+    promptFragment: "clean professional mood, polished aesthetic, refined atmosphere",
+  },
+  {
+    id: "mood-warm",
+    name: "Warm & Inviting",
+    description: "Cozy, welcoming atmosphere",
+    promptFragment: "warm inviting mood, cozy atmosphere, welcoming ambiance",
+  },
+  {
+    id: "mood-joyful",
+    name: "Joyful & Uplifting",
+    description: "Happy, positive energy",
+    promptFragment: "joyful mood, uplifting atmosphere, positive energy, celebratory",
+  },
+  {
+    id: "mood-peaceful",
+    name: "Peaceful & Serene",
+    description: "Calm, tranquil atmosphere",
+    promptFragment: "peaceful mood, serene atmosphere, tranquil ambiance, zen-like",
+  },
+  {
+    id: "mood-romantic",
+    name: "Romantic",
+    description: "Intimate, loving atmosphere",
+    promptFragment: "romantic mood, intimate atmosphere, soft romantic ambiance",
+  },
+  {
+    id: "mood-whimsical",
+    name: "Whimsical & Playful",
+    description: "Fun, lighthearted atmosphere",
+    promptFragment: "whimsical mood, playful atmosphere, lighthearted, fantastical",
+  },
+  {
+    id: "mood-magical",
+    name: "Magical & Enchanting",
+    description: "Mystical, fairy-tale atmosphere",
+    promptFragment: "magical mood, enchanting atmosphere, mystical ambiance, fairy-tale",
+  },
+  {
+    id: "mood-hopeful",
+    name: "Hopeful & Optimistic",
+    description: "Forward-looking, positive atmosphere",
+    promptFragment: "hopeful mood, optimistic atmosphere, promising, inspirational",
+  },
+  // Dramatic & Intense Moods
+  {
+    id: "mood-dramatic",
+    name: "Dramatic & Intense",
+    description: "High emotion, theatrical atmosphere",
+    promptFragment: "dramatic mood, intense atmosphere, theatrical, high emotion",
+  },
+  {
+    id: "mood-mysterious",
+    name: "Mysterious & Enigmatic",
+    description: "Intriguing, secretive atmosphere",
+    promptFragment: "mysterious mood, enigmatic atmosphere, intriguing, secretive ambiance",
+  },
+  {
+    id: "mood-tense",
+    name: "Tense & Suspenseful",
+    description: "Anticipation, edge-of-seat atmosphere",
+    promptFragment: "tense mood, suspenseful atmosphere, anticipation, thriller ambiance",
+  },
+  {
+    id: "mood-eerie",
+    name: "Eerie & Unsettling",
+    description: "Creepy, uncomfortable atmosphere",
+    promptFragment: "eerie mood, unsettling atmosphere, creepy ambiance, uncanny",
+  },
+  {
+    id: "mood-haunting",
+    name: "Haunting & Ethereal",
+    description: "Ghost-like, lingering atmosphere",
+    promptFragment: "haunting mood, ethereal atmosphere, spectral, lingering presence",
+  },
+  {
+    id: "mood-epic",
+    name: "Epic & Grand",
+    description: "Monumental, larger-than-life atmosphere",
+    promptFragment: "epic mood, grand atmosphere, monumental scale, larger-than-life",
+  },
+  // Melancholic Moods
+  {
+    id: "mood-melancholic",
+    name: "Melancholic & Wistful",
+    description: "Sad, longing atmosphere",
+    promptFragment: "melancholic mood, wistful atmosphere, nostalgic sadness, longing",
+  },
+  {
+    id: "mood-somber",
+    name: "Somber & Reflective",
+    description: "Serious, contemplative atmosphere",
+    promptFragment: "somber mood, reflective atmosphere, contemplative, introspective",
+  },
+  {
+    id: "mood-lonely",
+    name: "Lonely & Isolated",
+    description: "Solitary, desolate atmosphere",
+    promptFragment: "lonely mood, isolated atmosphere, solitary feeling, desolate",
+  },
+  {
+    id: "mood-bittersweet",
+    name: "Bittersweet",
+    description: "Mixed emotions, poignant atmosphere",
+    promptFragment: "bittersweet mood, poignant atmosphere, mixed emotions, touching",
+  },
+  // Documentary & Editorial
+  {
+    id: "mood-documentary",
+    name: "Documentary & Raw",
+    description: "Authentic, unpolished atmosphere",
+    promptFragment: "documentary mood, raw atmosphere, authentic, unfiltered",
+  },
+  {
+    id: "mood-editorial",
+    name: "Editorial & Fashion",
+    description: "High fashion, curated atmosphere",
+    promptFragment: "editorial mood, fashion atmosphere, curated aesthetic, high-end",
+  },
+  {
+    id: "mood-candid",
+    name: "Candid & Natural",
+    description: "Unposed, spontaneous atmosphere",
+    promptFragment: "candid mood, natural atmosphere, spontaneous, unposed authentic",
+  },
+  {
+    id: "mood-intimate-documentary",
+    name: "Intimate Documentary",
+    description: "Personal, close documentary style",
+    promptFragment: "intimate documentary mood, personal atmosphere, close observation, humorous documentary style",
+  },
+  // Energy & Action
+  {
+    id: "mood-energetic",
+    name: "Energetic & Dynamic",
+    description: "High energy, active atmosphere",
+    promptFragment: "energetic mood, dynamic atmosphere, high energy, vibrant movement",
+  },
+  {
+    id: "mood-rebellious",
+    name: "Rebellious & Edgy",
+    description: "Counter-culture, defiant atmosphere",
+    promptFragment: "rebellious mood, edgy atmosphere, counter-culture, defiant",
+  },
+  {
+    id: "mood-triumphant",
+    name: "Triumphant & Victorious",
+    description: "Achievement, celebration atmosphere",
+    promptFragment: "triumphant mood, victorious atmosphere, achievement, celebratory",
+  },
+  // Nostalgic & Vintage
+  {
+    id: "mood-nostalgic",
+    name: "Nostalgic & Retro",
+    description: "Past-focused, memory-evoking atmosphere",
+    promptFragment: "nostalgic mood, retro atmosphere, memory-evoking, vintage feeling",
+  },
+  {
+    id: "mood-summer-mystery",
+    name: "Summer Mystery",
+    description: "Warm seasonal with intrigue",
+    promptFragment: "summer mystery vibe, warm intrigue, seasonal atmosphere with secrets",
+  },
+  // Professional Contexts
+  {
+    id: "mood-corporate",
+    name: "Corporate & Business",
+    description: "Professional, formal atmosphere",
+    promptFragment: "corporate mood, business atmosphere, professional, formal setting",
+  },
+  {
+    id: "mood-luxury",
+    name: "Luxury & Premium",
+    description: "High-end, exclusive atmosphere",
+    promptFragment: "luxury mood, premium atmosphere, exclusive, sophisticated elegance",
+  },
+  {
+    id: "mood-minimalist",
+    name: "Minimalist & Zen",
+    description: "Simple, uncluttered atmosphere",
+    promptFragment: "minimalist mood, zen atmosphere, simple, uncluttered, essential",
+  },
+];
+
+// ==========================================
+// Camera Model Templates (FLUX.2)
+// ==========================================
+export const cameraModelTemplates: Template[] = [
+  // Modern Professional Digital
+  {
+    id: "camera-model-sony-a7iv",
+    name: "Sony A7IV",
+    description: "Modern full-frame mirrorless with excellent dynamic range",
+    promptFragment: "shot on Sony A7IV, clean sharp, high dynamic range, modern digital",
+  },
+  {
+    id: "camera-model-sony-a7riv",
+    name: "Sony A7R IV",
+    description: "High resolution full-frame mirrorless",
+    promptFragment: "shot on Sony A7R IV, 61 megapixel, extreme detail, high resolution",
+  },
+  {
+    id: "camera-model-canon-5d-mark-iv",
+    name: "Canon 5D Mark IV",
+    description: "Professional DSLR workhorse",
+    promptFragment: "shot on Canon 5D Mark IV, professional quality, rich colors, reliable rendering",
+  },
+  {
+    id: "camera-model-canon-r5",
+    name: "Canon EOS R5",
+    description: "High-end mirrorless with superb image quality",
+    promptFragment: "shot on Canon EOS R5, 45 megapixel, exceptional detail, professional mirrorless",
+  },
+  {
+    id: "camera-model-nikon-z8",
+    name: "Nikon Z8",
+    description: "Professional mirrorless with excellent colors",
+    promptFragment: "shot on Nikon Z8, professional colors, excellent dynamic range, modern Nikon",
+  },
+  {
+    id: "camera-model-nikon-d850",
+    name: "Nikon D850",
+    description: "High resolution professional DSLR",
+    promptFragment: "shot on Nikon D850, 45.7 megapixel, professional DSLR quality, excellent detail",
+  },
+  // Medium Format
+  {
+    id: "camera-model-hasselblad-x2d",
+    name: "Hasselblad X2D",
+    description: "Premium medium format with legendary quality",
+    promptFragment: "shot on Hasselblad X2D, medium format, legendary color science, premium quality",
+  },
+  {
+    id: "camera-model-fujifilm-gfx100",
+    name: "Fujifilm GFX 100S",
+    description: "100MP medium format with Fujifilm colors",
+    promptFragment: "shot on Fujifilm GFX 100S, 100 megapixel, medium format, beautiful Fujifilm colors",
+  },
+  {
+    id: "camera-model-phase-one",
+    name: "Phase One IQ4",
+    description: "Ultimate resolution medium format",
+    promptFragment: "shot on Phase One IQ4, 150 megapixel, ultimate detail, commercial quality",
+  },
+  // Fujifilm APS-C
+  {
+    id: "camera-model-fujifilm-xt5",
+    name: "Fujifilm X-T5",
+    description: "Premium APS-C with film simulations",
+    promptFragment: "shot on Fujifilm X-T5, 40 megapixel APS-C, Fujifilm color science, retro design",
+  },
+  {
+    id: "camera-model-fujifilm-xpro3",
+    name: "Fujifilm X-Pro3",
+    description: "Rangefinder-style with classic aesthetics",
+    promptFragment: "shot on Fujifilm X-Pro3, rangefinder style, classic film look, street photography",
+  },
+  // Leica
+  {
+    id: "camera-model-leica-m11",
+    name: "Leica M11",
+    description: "Legendary rangefinder with Leica rendering",
+    promptFragment: "shot on Leica M11, Leica rendering, rangefinder quality, legendary color science",
+  },
+  {
+    id: "camera-model-leica-q3",
+    name: "Leica Q3",
+    description: "Premium compact with Leica DNA",
+    promptFragment: "shot on Leica Q3, 28mm Summilux, Leica look, premium compact quality",
+  },
+  {
+    id: "camera-model-leica-sl2",
+    name: "Leica SL2",
+    description: "Full-frame mirrorless with Leica quality",
+    promptFragment: "shot on Leica SL2, full-frame mirrorless, Leica image quality, professional",
+  },
+  // Film Cameras
+  {
+    id: "camera-model-contax-t2",
+    name: "Contax T2",
+    description: "Cult classic compact film camera",
+    promptFragment: "shot on Contax T2, Carl Zeiss lens, film aesthetic, vintage compact quality",
+  },
+  {
+    id: "camera-model-mamiya-rz67",
+    name: "Mamiya RZ67",
+    description: "Medium format film legend",
+    promptFragment: "shot on Mamiya RZ67, 6x7 medium format film, legendary portrait camera",
+  },
+  {
+    id: "camera-model-hasselblad-500cm",
+    name: "Hasselblad 500CM",
+    description: "Iconic medium format film camera",
+    promptFragment: "shot on Hasselblad 500CM, 6x6 medium format film, classic Hasselblad rendering",
+  },
+  {
+    id: "camera-model-leica-m6",
+    name: "Leica M6",
+    description: "Classic 35mm film rangefinder",
+    promptFragment: "shot on Leica M6, 35mm film, rangefinder photography, classic Leica look",
+  },
+  {
+    id: "camera-model-nikon-fm2",
+    name: "Nikon FM2",
+    description: "Classic manual 35mm film SLR",
+    promptFragment: "shot on Nikon FM2, 35mm film SLR, manual focus, classic Nikon rendering",
+  },
+  {
+    id: "camera-model-canon-ae1",
+    name: "Canon AE-1",
+    description: "Iconic 35mm film SLR",
+    promptFragment: "shot on Canon AE-1, 35mm film, classic Canon look, 1970s aesthetic",
+  },
+  // Vintage & Character
+  {
+    id: "camera-model-holga",
+    name: "Holga 120",
+    description: "Toy camera with light leaks and vignetting",
+    promptFragment: "shot on Holga 120, toy camera aesthetic, light leaks, heavy vignette, lo-fi",
+  },
+  {
+    id: "camera-model-diana",
+    name: "Diana F+",
+    description: "Dreamy toy camera with soft focus",
+    promptFragment: "shot on Diana F+, dreamy soft focus, plastic lens, experimental film",
+  },
+  {
+    id: "camera-model-polaroid-sx70",
+    name: "Polaroid SX-70",
+    description: "Classic instant camera",
+    promptFragment: "shot on Polaroid SX-70, instant film, unique color palette, vintage instant",
+  },
+  // Smartphone for Authenticity
+  {
+    id: "camera-model-iphone",
+    name: "iPhone",
+    description: "Modern smartphone camera look",
+    promptFragment: "shot on iPhone, smartphone photography, computational photography, modern mobile",
+  },
+];
+
+// ==========================================
+// Lens Templates (FLUX.2)
+// ==========================================
+export const lensTemplates: Template[] = [
+  // Prime Lenses - Wide
+  {
+    id: "lens-14mm",
+    name: "14mm Ultra-Wide",
+    description: "Ultra-wide for dramatic perspectives",
+    promptFragment: "14mm ultra-wide lens, dramatic perspective, environmental context, architectural",
+  },
+  {
+    id: "lens-24mm",
+    name: "24mm Wide Angle",
+    description: "Wide angle for environmental portraits",
+    promptFragment: "24mm wide angle lens, environmental context, slight perspective, storytelling",
+  },
+  {
+    id: "lens-28mm",
+    name: "28mm Classic Wide",
+    description: "Classic street photography focal length",
+    promptFragment: "28mm lens, classic street focal length, natural perspective, documentary",
+  },
+  // Prime Lenses - Standard
+  {
+    id: "lens-35mm",
+    name: "35mm Standard Wide",
+    description: "Versatile classic focal length",
+    promptFragment: "35mm lens, classic focal length, natural perspective, versatile framing",
+  },
+  {
+    id: "lens-35mm-f14",
+    name: "35mm f/1.4",
+    description: "Fast 35mm with shallow depth",
+    promptFragment: "35mm f/1.4 lens, wide aperture, shallow depth of field, environmental portraits",
+  },
+  {
+    id: "lens-50mm",
+    name: "50mm Normal",
+    description: "Human eye equivalent perspective",
+    promptFragment: "50mm lens, normal focal length, natural human perspective, classic standard",
+  },
+  {
+    id: "lens-50mm-f12",
+    name: "50mm f/1.2",
+    description: "Ultra-fast fifty with dreamy bokeh",
+    promptFragment: "50mm f/1.2 lens, ultra-fast aperture, dreamy bokeh, creamy background",
+  },
+  // Prime Lenses - Portrait
+  {
+    id: "lens-85mm",
+    name: "85mm Portrait",
+    description: "Classic portrait focal length",
+    promptFragment: "85mm portrait lens, flattering compression, beautiful bokeh, portrait rendering",
+  },
+  {
+    id: "lens-85mm-f14",
+    name: "85mm f/1.4",
+    description: "Fast portrait lens with creamy bokeh",
+    promptFragment: "85mm f/1.4 lens, portrait quality, extremely shallow depth of field, subject isolation",
+  },
+  {
+    id: "lens-100mm",
+    name: "100mm Short Tele",
+    description: "Tight portraits and details",
+    promptFragment: "100mm lens, short telephoto, tight portraits, compressed perspective",
+  },
+  {
+    id: "lens-105mm-f14",
+    name: "105mm f/1.4",
+    description: "Premium portrait telephoto",
+    promptFragment: "105mm f/1.4 lens, premium portrait quality, extreme bokeh, professional rendering",
+  },
+  // Prime Lenses - Telephoto
+  {
+    id: "lens-135mm",
+    name: "135mm Portrait Tele",
+    description: "Beautiful compression for portraits",
+    promptFragment: "135mm lens, portrait telephoto, beautiful compression, isolated subject",
+  },
+  {
+    id: "lens-200mm",
+    name: "200mm Telephoto",
+    description: "Compressed backgrounds, sports and wildlife",
+    promptFragment: "200mm telephoto lens, strong compression, distant subject isolation",
+  },
+  {
+    id: "lens-400mm",
+    name: "400mm Super Telephoto",
+    description: "Extreme compression for wildlife",
+    promptFragment: "400mm super telephoto, extreme compression, wildlife photography, distant subjects",
+  },
+  // Zoom Lenses
+  {
+    id: "lens-24-70mm",
+    name: "24-70mm f/2.8",
+    description: "Professional standard zoom",
+    promptFragment: "24-70mm f/2.8 zoom lens, professional versatility, sharp throughout range",
+  },
+  {
+    id: "lens-70-200mm",
+    name: "70-200mm f/2.8",
+    description: "Professional telephoto zoom",
+    promptFragment: "70-200mm f/2.8 zoom lens, telephoto versatility, portrait and event quality",
+  },
+  {
+    id: "lens-16-35mm",
+    name: "16-35mm f/2.8",
+    description: "Professional wide zoom",
+    promptFragment: "16-35mm f/2.8 zoom lens, wide-angle versatility, landscape and architecture",
+  },
+  // Specialty Lenses
+  {
+    id: "lens-macro",
+    name: "Macro Lens",
+    description: "Extreme close-up capability",
+    promptFragment: "macro lens, extreme close-up, fine detail, 1:1 magnification capable",
+  },
+  {
+    id: "lens-tilt-shift",
+    name: "Tilt-Shift Lens",
+    description: "Selective focus and perspective control",
+    promptFragment: "tilt-shift lens, selective focus plane, perspective correction, miniature effect capable",
+  },
+  {
+    id: "lens-fisheye",
+    name: "Fisheye Lens",
+    description: "Extreme wide with curved distortion",
+    promptFragment: "fisheye lens, 180 degree view, curved distortion, extreme wide angle",
+  },
+  {
+    id: "lens-soft-focus",
+    name: "Soft Focus Lens",
+    description: "Intentionally soft romantic rendering",
+    promptFragment: "soft focus lens, dreamy softness, romantic rendering, gentle glow",
+  },
+  // Vintage & Character Lenses
+  {
+    id: "lens-helios-44",
+    name: "Helios 44-2 58mm",
+    description: "Swirly bokeh vintage Soviet lens",
+    promptFragment: "Helios 44-2 58mm lens, swirly bokeh, vintage Soviet rendering, character lens",
+  },
+  {
+    id: "lens-petzval",
+    name: "Petzval Lens",
+    description: "Classic swirly bokeh portrait lens",
+    promptFragment: "Petzval lens, dramatic swirly bokeh, center sharpness, artistic rendering",
+  },
+  {
+    id: "lens-zeiss-planar",
+    name: "Zeiss Planar 50mm",
+    description: "Classic Zeiss rendering",
+    promptFragment: "Zeiss Planar 50mm, classic Zeiss rendering, smooth bokeh, micro-contrast",
+  },
+  {
+    id: "lens-leica-summilux",
+    name: "Leica Summilux",
+    description: "Legendary Leica fast prime",
+    promptFragment: "Leica Summilux lens, legendary rendering, Leica glow, premium optics",
+  },
+  {
+    id: "lens-leica-noctilux",
+    name: "Leica Noctilux",
+    description: "Ultra-fast Leica with unique rendering",
+    promptFragment: "Leica Noctilux f/0.95, ultra-fast, unique glow, extreme shallow depth",
+  },
+];
+
+// ==========================================
+// Color Palette Templates (FLUX.2)
+// ==========================================
+export const colorPaletteTemplates: Template[] = [
+  // Warm Palettes
+  {
+    id: "color-warm-golden",
+    name: "Warm Golden",
+    description: "Golden hour warm tones",
+    promptFragment: "warm golden color palette, golden tones, sun-kissed warmth",
+  },
+  {
+    id: "color-warm-amber",
+    name: "Amber Tones",
+    description: "Rich amber and honey colors",
+    promptFragment: "amber color palette, honey tones, rich warm browns, autumn warmth",
+  },
+  {
+    id: "color-warm-sunset",
+    name: "Sunset Colors",
+    description: "Orange, pink, and purple sunset hues",
+    promptFragment: "sunset color palette, orange and pink, purple hues, warm gradient sky",
+  },
+  {
+    id: "color-warm-terracotta",
+    name: "Terracotta & Earth",
+    description: "Earthy warm clay tones",
+    promptFragment: "terracotta color palette, earthy clay tones, warm earth colors, natural warmth",
+  },
+  // Cool Palettes
+  {
+    id: "color-cool-blue",
+    name: "Cool Blue",
+    description: "Calming blue tones",
+    promptFragment: "cool blue color palette, calming blues, serene tones, peaceful blues",
+  },
+  {
+    id: "color-cool-teal",
+    name: "Teal & Cyan",
+    description: "Deep teal and cyan tones",
+    promptFragment: "teal and cyan color palette, deep aquatic tones, ocean colors",
+  },
+  {
+    id: "color-cool-mint",
+    name: "Mint & Sage",
+    description: "Fresh mint and sage greens",
+    promptFragment: "mint and sage color palette, fresh green tones, calming natural colors",
+  },
+  {
+    id: "color-cool-lavender",
+    name: "Lavender Dream",
+    description: "Soft purple and lavender tones",
+    promptFragment: "lavender color palette, soft purple tones, dreamy pastels, gentle violet",
+  },
+  // Vibrant Palettes
+  {
+    id: "color-vibrant-neon",
+    name: "Neon Vibrant",
+    description: "Electric neon colors",
+    promptFragment: "neon color palette, electric bright colors, vibrant fluorescent, high saturation",
+  },
+  {
+    id: "color-vibrant-tropical",
+    name: "Tropical Vibrant",
+    description: "Bold tropical colors",
+    promptFragment: "tropical color palette, vibrant paradise colors, bold exotic hues",
+  },
+  {
+    id: "color-vibrant-pop",
+    name: "Pop Art Colors",
+    description: "Bold primary pop art palette",
+    promptFragment: "pop art color palette, bold primary colors, high contrast, graphic colors",
+  },
+  {
+    id: "color-vibrant-rainbow",
+    name: "Rainbow Spectrum",
+    description: "Full color spectrum",
+    promptFragment: "rainbow color palette, full spectrum, all colors represented, prismatic",
+  },
+  // Muted & Pastel Palettes
+  {
+    id: "color-muted-desaturated",
+    name: "Muted & Desaturated",
+    description: "Subtle, low saturation tones",
+    promptFragment: "muted color palette, desaturated tones, subtle colors, understated",
+  },
+  {
+    id: "color-muted-pastel",
+    name: "Soft Pastels",
+    description: "Gentle pastel colors",
+    promptFragment: "pastel color palette, soft gentle colors, light delicate tones",
+  },
+  {
+    id: "color-muted-dusty",
+    name: "Dusty Vintage",
+    description: "Faded vintage color tones",
+    promptFragment: "dusty color palette, faded vintage tones, weathered colors, aged appearance",
+  },
+  {
+    id: "color-muted-nordic",
+    name: "Nordic Minimalist",
+    description: "Scandinavian neutral palette",
+    promptFragment: "nordic color palette, Scandinavian neutrals, white and grey, minimal colors",
+  },
+  // Monochromatic
+  {
+    id: "color-mono-black-white",
+    name: "Black & White",
+    description: "Classic monochrome",
+    promptFragment: "black and white, monochrome, grayscale, classic contrast",
+  },
+  {
+    id: "color-mono-sepia",
+    name: "Sepia Tone",
+    description: "Warm brown monochrome",
+    promptFragment: "sepia toned, warm brown monochrome, vintage sepia, antique photo",
+  },
+  {
+    id: "color-mono-cyanotype",
+    name: "Cyanotype Blue",
+    description: "Blue monochrome print process",
+    promptFragment: "cyanotype blue, Prussian blue monochrome, blueprint aesthetic",
+  },
+  // Specific Color Schemes
+  {
+    id: "color-split-complementary",
+    name: "Split Complementary",
+    description: "Harmonious contrast palette",
+    promptFragment: "split complementary colors, harmonious contrast, balanced color tension",
+  },
+  {
+    id: "color-analogous",
+    name: "Analogous Colors",
+    description: "Adjacent colors on color wheel",
+    promptFragment: "analogous color palette, harmonious adjacent colors, smooth color flow",
+  },
+  {
+    id: "color-triadic",
+    name: "Triadic Harmony",
+    description: "Three evenly spaced colors",
+    promptFragment: "triadic color harmony, three-color balance, vibrant color triangle",
+  },
+  // Themed Palettes
+  {
+    id: "color-cyber-neon",
+    name: "Cyberpunk Neon",
+    description: "Pink, purple, and cyan cyberpunk",
+    promptFragment: "cyberpunk neon palette, pink purple cyan, electric night colors, futuristic glow",
+  },
+  {
+    id: "color-forest-earth",
+    name: "Forest & Earth",
+    description: "Deep greens and browns",
+    promptFragment: "forest earth palette, deep greens, rich browns, woodland colors, natural",
+  },
+  {
+    id: "color-ocean-depth",
+    name: "Ocean Depths",
+    description: "Deep sea blues and teals",
+    promptFragment: "ocean depth palette, deep sea colors, dark blues, aquatic teal, marine",
+  },
+  {
+    id: "color-desert-sand",
+    name: "Desert Sands",
+    description: "Sandy beige and rust tones",
+    promptFragment: "desert sand palette, sandy beige, rust orange, arid earth tones",
+  },
+  {
+    id: "color-night-sky",
+    name: "Night Sky",
+    description: "Deep blues and purples with stars",
+    promptFragment: "night sky palette, deep midnight blue, cosmic purple, starlit darkness",
+  },
+];
+
+// ==========================================
 // All Templates Export
 // ==========================================
 export const allTemplates = {
@@ -2299,6 +3218,11 @@ export const allTemplates = {
   action: actionTemplates,
   clothing: clothingTemplates,
   expression: expressionTemplates,
+  // FLUX.2 Specific Categories
+  mood: moodTemplates,
+  cameraModel: cameraModelTemplates,
+  lens: lensTemplates,
+  colorPalette: colorPaletteTemplates,
 };
 
 export type TemplateCategory = keyof typeof allTemplates;
