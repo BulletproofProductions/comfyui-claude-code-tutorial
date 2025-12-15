@@ -1,4 +1,4 @@
-# ComfyUI Image Generator
+# Bulletproof Image Generator
 
 An AI-powered image generator application that uses ComfyUI to create and refine images based on detailed prompts with optional reference images (avatars) for consistent character generation.
 
@@ -26,16 +26,7 @@ An AI-powered image generator application that uses ComfyUI to create and refine
 - pnpm (recommended)
 
 ### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd comfyui-image-generator
-   ```
-
-2. Install dependencies:
-   ```bash
-   pnpm install
+   cd bulletproof-image-generator
    ```
 
 3. Set up environment variables:
@@ -43,10 +34,7 @@ An AI-powered image generator application that uses ComfyUI to create and refine
    cp env.example .env
    ```
 
-4. Configure your `.env` file:
-   ```env
-   # Database
-   POSTGRES_URL="postgresql://username:password@localhost:5432/comfyui_generator"
+   POSTGRES_URL="postgresql://dev_user:dev_passwor@localhost:5432/comfyui_generator"
 
    # App URL
    NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -57,11 +45,13 @@ An AI-powered image generator application that uses ComfyUI to create and refine
 
 5. Set up the database:
    ```bash
+   docker compose up -d
    pnpm db:migrate
    ```
 
 6. Start the development server:
    ```bash
+   pmpm install
    pnpm dev
    ```
 

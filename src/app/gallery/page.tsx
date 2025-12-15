@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { PublicGalleryClient } from "@/components/gallery/public-gallery-client";
 
 export const metadata: Metadata = {
-  title: "Gallery - ComfyUI Image Generator",
+  title: "Gallery - Bulletproof Productions",
   description: "Explore all AI-generated images",
 };
 

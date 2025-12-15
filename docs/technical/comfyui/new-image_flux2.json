@@ -1,7 +1,7 @@
 {
   "6": {
     "inputs": {
-      "text": "The woman is wearing a small pale yellow knitted beanie, with a white fabric patch on the front right, embroidered with big gray text “FLUX.2 COMFY.” Kepp the face",
+      "text": "The woman is wearing a small pale yellow knitted beanie, with a white fabric patch on the front right, embroidered with big gray text “FLUX.2 COMFY.” Keep the face",
       "clip": [
         "38",
         0
@@ -115,7 +115,7 @@
   },
   "25": {
     "inputs": {
-      "noise_seed": 649422536169327
+      "noise_seed": 712510679531621
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -194,7 +194,7 @@
   },
   "46": {
     "inputs": {
-      "image": "image_flux2_input_image.png"
+      "image": "replicate-prediction-thfn4mcyt5rm80csa6z8jj75eg.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -203,7 +203,7 @@
   },
   "47": {
     "inputs": {
-      "width": 1248,
+      "width": 800,
       "height": 832,
       "batch_size": 1
     },
@@ -214,8 +214,8 @@
   },
   "48": {
     "inputs": {
-      "steps": 20,
-      "width": 1248,
+      "steps": 8,
+      "width": 800,
       "height": 832
     },
     "class_type": "Flux2Scheduler",

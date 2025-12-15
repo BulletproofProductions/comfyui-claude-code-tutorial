@@ -36,7 +36,7 @@ export function SiteHeader() {
             <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-              aria-label="ComfyUI Image Generator - Go to homepage"
+              aria-label="Bulletproof Productions - Go to homepage"
             >
               <div
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/20"
@@ -45,7 +45,7 @@ export function SiteHeader() {
                 <Sparkles className="h-5 w-5 text-purple-500" />
               </div>
               <span className="bg-gradient-to-r from-purple-500 to-purple-600 bg-clip-text text-transparent hidden sm:inline">
-                ComfyUI Image Generator
+                Bulletproof Productions
               </span>
             </Link>
           </h1>
@@ -87,7 +87,7 @@ export function SiteHeader() {
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-purple-500" />
-                    ComfyUI Image Generator
+                    Bulletproof Productions
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 flex flex-col gap-2">

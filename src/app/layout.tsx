@@ -18,35 +18,35 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ComfyUI Image Generator",
-    template: "%s | ComfyUI Image Generator",
+    default: "Bulletproof Productions",
+    template: "%s | Bulletproof Productions",
   },
   description:
-    "AI-powered image generation using ComfyUI. Create stunning images with text-to-image and image-to-image capabilities, customizable prompts, and reusable avatars.",
+    "AI-powered image generation by Bulletproof Productions. Create stunning images with text-to-image and image-to-image capabilities, customizable prompts, and reusable avatars.",
   keywords: [
     "AI Image Generation",
-    "ComfyUI",
+    "Bulletproof Productions",
     "Text to Image",
     "Image Generation",
-    "ComfyUI Image Generator",
+    "Bulletproof Productions",
     "Next.js",
     "React",
   ],
-  authors: [{ name: "ComfyUI Image Generator" }],
-  creator: "ComfyUI Image Generator",
+  authors: [{ name: "Bulletproof Productions" }],
+  creator: "Bulletproof Productions",
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "ComfyUI Image Generator",
-    title: "ComfyUI Image Generator",
+    siteName: "Bulletproof Productions",
+    title: "Bulletproof Productions",
     description:
-      "AI-powered image generation using ComfyUI. Create stunning images with customizable prompts.",
+      "AI-powered image generation by Bulletproof Productions. Create stunning images with customizable prompts.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ComfyUI Image Generator",
+    title: "Bulletproof Productions",
     description:
-      "AI-powered image generation using ComfyUI. Create stunning images with customizable prompts.",
+      "AI-powered image generation by Bulletproof Productions. Create stunning images with customizable prompts.",
   },
   robots: {
     index: true,
@@ -58,9 +58,9 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "ComfyUI Image Generator",
+  name: "Bulletproof Productions",
   description:
-    "AI-powered image generation using ComfyUI. Create stunning images with text-to-image and image-to-image capabilities.",
+    "AI-powered image generation by Bulletproof Productions. Create stunning images with text-to-image and image-to-image capabilities.",
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Any",
   offers: {
@@ -70,7 +70,7 @@ const jsonLd = {
   },
   author: {
     "@type": "Organization",
-    name: "ComfyUI Image Generator",
+    name: "Bulletproof Productions",
   },
 };
 
