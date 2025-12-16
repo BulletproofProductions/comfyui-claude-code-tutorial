@@ -45,14 +45,15 @@ An AI-powered image generator application that uses ComfyUI to create and refine
 
 5. Set up the database:
    ```bash
+   pnpm install
    docker compose up -d
    pnpm db:migrate
    ```
 
-6. Start the development server:
+6. Start the development server and comfyui server portable:
    ```bash
-   pmpm install
    pnpm dev
+   .\run_nvidia_gpu.bat
    ```
 
 7. Open [http://localhost:3000](http://localhost:3000)
