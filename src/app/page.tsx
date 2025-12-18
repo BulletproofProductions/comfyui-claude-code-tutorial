@@ -50,9 +50,12 @@ export default function HomePage() {
     isRefining,
     error,
     currentPromptId,
+    currentImageIndex,
+    totalImages,
     generate,
     refine,
     clearError,
+    completeGeneration,
   } = useGeneration();
 
   // Handle generation
@@ -86,6 +89,16 @@ export default function HomePage() {
     if (result) {
       toast.success("Images generated successfully!");
     }
+  };
+
+  // Handle generation progress completion
+  const handleProgressComplete = () => {
+    completeGeneration();
+  };
+
+  // Handle generation progress error
+  const handleProgressError = () => {
+    completeGeneration();
   };
 
   // Handle refinement
@@ -208,12 +221,16 @@ export default function HomePage() {
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
             currentPromptId={currentPromptId}
+            currentImageIndex={currentImageIndex}
+            totalImages={totalImages}
             currentConfig={currentConfig}
             presets={presets}
             presetsLoading={presetsLoading}
             onSavePreset={handleSavePreset}
             onLoadPreset={handleLoadPreset}
             onDeletePreset={handleDeletePreset}
+            onProgressComplete={handleProgressComplete}
+            onProgressError={handleProgressError}
           />
         }
         rightPanel={

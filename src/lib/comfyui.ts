@@ -90,11 +90,21 @@ export function getResolutionDimensions(
 }
 
 // ==========================================
+// Progress Tracking Types
+// ==========================================
+
+export interface ProgressCallback {
+  (progress: { value: number; max: number }): void;
+}
+
+// ==========================================
 // ComfyUI Client Class
 // ==========================================
 
 export class ComfyUIClient {
   private baseUrl: string;
+  private progressCallbacks: Map<string, ProgressCallback[]> = new Map();
+  private websocket: WebSocket | null = null;
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || process.env.COMFYUI_URL || "http://127.0.0.1:8000";
@@ -132,6 +142,113 @@ export class ComfyUIClient {
 
     const data = await response.json();
     return data[promptId] || null;
+  }
+
+  /**
+   * Connect to ComfyUI WebSocket for real-time progress updates
+   * Returns a cleanup function to close the connection
+   */
+  connectToProgressSocket(promptId: string, callback: ProgressCallback): () => void {
+    // Add callback to the map
+    if (!this.progressCallbacks.has(promptId)) {
+      this.progressCallbacks.set(promptId, []);
+    }
+    this.progressCallbacks.get(promptId)?.push(callback);
+
+    // Create or reuse WebSocket connection
+    if (!this.websocket) {
+      this.createWebSocketConnection();
+    }
+
+    // Return cleanup function
+    return () => {
+      const callbacks = this.progressCallbacks.get(promptId);
+      if (callbacks) {
+        const index = callbacks.indexOf(callback);
+        if (index > -1) {
+          callbacks.splice(index, 1);
+        }
+        if (callbacks.length === 0) {
+          this.progressCallbacks.delete(promptId);
+        }
+      }
+    };
+  }
+
+  /**
+   * Create WebSocket connection to ComfyUI
+   */
+  private createWebSocketConnection(): void {
+    try {
+      const wsUrl = this.getWebSocketUrl();
+      // Only create WebSocket in Node.js environment (server-side)
+      if (typeof WebSocket === 'undefined') {
+        console.log('[ComfyUI] WebSocket not available in this environment');
+        return; // WebSocket not available in this environment
+      }
+      
+      console.log(`[ComfyUI] Attempting WebSocket connection to ${wsUrl}`);
+      this.websocket = new WebSocket(wsUrl);
+
+      this.websocket.onopen = () => {
+        console.log('[ComfyUI] WebSocket connection established');
+      };
+
+      this.websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[ComfyUI] WebSocket message received:', JSON.stringify(data).substring(0, 200));
+
+          // Handle execution_progress messages from ComfyUI
+          if (data.type === 'execution_progress') {
+            const { value, max, prompt_id } = data.data;
+            console.log(`[ComfyUI] Execution progress event - prompt_id: ${prompt_id}, value: ${value}, max: ${max}`);
+            if (prompt_id && value !== undefined && max !== undefined) {
+              console.log(`[ComfyUI] Progress update for ${prompt_id}: ${value}/${max}`);
+              const callbacks = this.progressCallbacks.get(prompt_id);
+              if (callbacks) {
+                console.log(`[ComfyUI] Found ${callbacks.length} callbacks for prompt_id ${prompt_id}`);
+                callbacks.forEach((callback) => {
+                  callback({ value, max });
+                });
+              } else {
+                console.warn(`[ComfyUI] No callbacks registered for prompt_id: ${prompt_id}. Registered prompts:`, Array.from(this.progressCallbacks.keys()));
+              }
+            }
+          } else {
+            console.log(`[ComfyUI] Non-progress message type: ${data.type}`);
+          }
+        } catch (error) {
+          console.error('[ComfyUI] Error parsing WebSocket message:', error);
+        }
+      };
+
+      this.websocket.onerror = (error) => {
+        console.error('[ComfyUI] WebSocket error:', error);
+        // Reconnection will be handled by subsequent connection attempts
+        this.websocket = null;
+      };
+
+      this.websocket.onclose = () => {
+        console.log('[ComfyUI] WebSocket connection closed');
+        this.websocket = null;
+      };
+    } catch (error) {
+      console.error('[ComfyUI] Failed to create WebSocket connection:', error);
+      // WebSocket not available (likely client-side)
+      this.websocket = null;
+    }
+  }
+
+  /**
+   * Close WebSocket connection
+   */
+  closeProgressSocket(): void {
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
+    }
+    this.progressCallbacks.clear();
   }
 
   /**

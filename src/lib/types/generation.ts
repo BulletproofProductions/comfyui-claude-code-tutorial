@@ -48,6 +48,7 @@ export interface Generation {
   settings: GenerationSettings;
   status: GenerationStatus;
   errorMessage: string | null;
+  comfyuiPromptId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

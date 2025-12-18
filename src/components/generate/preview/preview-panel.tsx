@@ -27,6 +27,10 @@ interface PreviewPanelProps {
   isGenerating: boolean;
   // Progress tracking
   currentPromptId: string | null;
+  currentImageIndex: number;
+  totalImages: number;
+  onProgressComplete?: () => void;
+  onProgressError?: (error: string) => void;
   // Preset props
   currentConfig: PresetConfig;
   presets: Preset[];
@@ -43,6 +47,10 @@ export function PreviewPanel({
   onGenerate,
   isGenerating,
   currentPromptId,
+  currentImageIndex,
+  totalImages,
+  onProgressComplete,
+  onProgressError,
   currentConfig,
   presets,
   presetsLoading,
@@ -256,6 +264,10 @@ export function PreviewPanel({
           <GenerationProgress
             promptId={currentPromptId}
             isGenerating={isGenerating}
+            currentImageIndex={currentImageIndex}
+            totalImages={totalImages}
+            onComplete={onProgressComplete}
+            onError={onProgressError}
           />
         )}
 

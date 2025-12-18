@@ -1,0 +1,1 @@
+ALTER TABLE "generations" ADD COLUMN "comfyui_prompt_id" text;

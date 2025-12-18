@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { comfyui, getResolutionDimensions } from "@/lib/comfyui";
 import { db } from "@/lib/db";
-import { generations, generatedImages, generationHistory, avatars } from "@/lib/schema";
+import { generations, generatedImages as generatedImagesTable, generationHistory, avatars } from "@/lib/schema";
 import { upload, readFromStorage } from "@/lib/storage";
 import type {
   GenerationSettings,
+  GenerationStatus,
   AvatarType,
   GenerationWithImages,
   ImageResolution,
@@ -172,100 +173,129 @@ export async function POST(request: Request) {
 
       // Generate images (loop for imageCount)
       const imageCount = settings.imageCount || 1;
-      const savedImages = [];
 
-      for (let i = 0; i < imageCount; i++) {
-        // Build the workflow
-        const workflow = comfyui.buildFlux2Workflow({
-          prompt: prompt.trim(),
-          width,
-          height,
-          steps: settings.steps,
-          guidance: settings.guidance,
-          seed: settings.seed !== undefined ? settings.seed + i : undefined, // Increment seed for each image
-          referenceImageFilename,
-        });
+      // Start generation asynchronously - don't wait for completion
+      // This allows progress tracking via SSE while generation happens
+      (async () => {
+        try {
+          const generatedImages = [];
 
-        // Queue the prompt
-        const queueResult = await comfyui.queuePrompt(workflow);
+          for (let i = 0; i < imageCount; i++) {
 
-        // Wait for completion
-        const history = await comfyui.waitForCompletion(queueResult.prompt_id);
+            // Build the workflow
+            const workflow = comfyui.buildFlux2Workflow({
+              prompt: prompt.trim(),
+              width,
+              height,
+              steps: settings.steps,
+              guidance: settings.guidance,
+              seed: settings.seed !== undefined ? settings.seed + i : undefined, // Increment seed for each image
+              referenceImageFilename,
+            });
 
-        // Get the generated images from the output
-        const outputNode = Object.values(history.outputs).find((output) => output.images?.length);
-        if (!outputNode?.images?.length) {
-          throw new Error("No images in generation output");
-        }
+            // Queue the prompt
+            const queueResult = await comfyui.queuePrompt(workflow);
+            console.log(`[Generate API] Queued prompt for generation ${generation.id}: ${queueResult.prompt_id}`);
 
-        // Fetch and save each generated image
-        for (const imageInfo of outputNode.images) {
-          const imageBuffer = await comfyui.getImage(
-            imageInfo.filename,
-            imageInfo.subfolder,
-            imageInfo.type
-          );
+            // Store comfyuiPromptId in the database for this generation (only for the first image)
+            if (i === 0 && queueResult.prompt_id) {
+              await db.update(generations)
+                .set({ comfyuiPromptId: queueResult.prompt_id })
+                .where(eq(generations.id, generation.id));
+              console.log(`[Generate API] Stored comfyuiPromptId for generation ${generation.id}: ${queueResult.prompt_id}`);
+            }
 
-          // Convert buffer to base64 for storage
-          const timestamp = Date.now();
-          const filename = `gen-${generation.id}-${i}-${timestamp}.png`;
+            // Wait for completion
+            const history = await comfyui.waitForCompletion(queueResult.prompt_id);
 
-          // Upload to storage
-          const uploadResult = await upload(imageBuffer, filename, "generations");
+            // Get the generated images from the output
+            const outputNode = Object.values(history.outputs).find((output) => output.images?.length);
+            if (!outputNode?.images?.length) {
+              throw new Error("No images in generation output");
+            }
 
-          // Save to database
-          const [savedImage] = await db
-            .insert(generatedImages)
-            .values({
-              generationId: generation.id,
-              imageUrl: uploadResult.url,
-            })
-            .returning();
+            // Fetch and save each generated image
+            for (const imageInfo of outputNode.images) {
+              const imageBuffer = await comfyui.getImage(
+                imageInfo.filename,
+                imageInfo.subfolder,
+                imageInfo.type
+              );
 
-          if (savedImage) {
-            savedImages.push(savedImage);
+              // Convert buffer to base64 for storage
+              const timestamp = Date.now();
+              const filename = `gen-${generation.id}-${i}-${timestamp}.png`;
+
+              // Upload to storage
+              const uploadResult = await upload(imageBuffer, filename, "generations");
+
+              // Save to database
+              const [savedImage] = await db
+                .insert(generatedImagesTable)
+                .values({
+                  generationId: generation.id,
+                  imageUrl: uploadResult.url,
+                })
+                .returning();
+
+              if (savedImage) {
+                generatedImages.push(savedImage);
+              }
+            }
           }
+
+          if (generatedImages.length === 0) {
+            throw new Error("No images were generated");
+          }
+
+          // Store the assistant response in history
+          await db.insert(generationHistory).values({
+            generationId: generation.id,
+            role: "assistant",
+            content: `Generated ${generatedImages.length} image(s) successfully`,
+            imageUrls: generatedImages.map((img) => img.imageUrl),
+          });
+
+          // Update generation status to completed
+          await db
+            .update(generations)
+            .set({ status: "completed" })
+            .where(eq(generations.id, generation.id));
+
+          console.log(`[Generate API] Generation ${generation.id} completed successfully`);
+        } catch (asyncError) {
+          // Update generation status to failed
+          const errorMessage = asyncError instanceof Error ? asyncError.message : "Generation failed";
+          console.error(`[Generate API] Generation ${generation.id} failed:`, errorMessage);
+          
+          await db
+            .update(generations)
+            .set({
+              status: "failed",
+              errorMessage: errorMessage,
+            })
+            .where(eq(generations.id, generation.id));
         }
-      }
+      })(); // Start async processing
 
-      if (savedImages.length === 0) {
-        throw new Error("No images were generated");
-      }
-
-      // Store the assistant response in history
-      await db.insert(generationHistory).values({
-        generationId: generation.id,
-        role: "assistant",
-        content: `Generated ${savedImages.length} image(s) successfully`,
-        imageUrls: savedImages.map((img) => img.imageUrl),
-      });
-
-      // Update generation status to completed
-      await db
-        .update(generations)
-        .set({ status: "completed" })
-        .where(eq(generations.id, generation.id));
-
-      // Fetch the updated generation with images
-      const [updatedGeneration] = await db
+      // Return immediately with the generation and ComfyUI prompt_id for progress tracking
+      // The client will use the generation.id as the key to track progress via SSE
+      // Try to fetch any images already generated (should be empty at first, but will be filled after completion)
+      const images = await db
         .select()
-        .from(generations)
-        .where(eq(generations.id, generation.id));
+        .from(generatedImagesTable)
+        .where(eq(generatedImagesTable.generationId, generation.id));
 
       const generationWithImages: GenerationWithImages = {
-        id: updatedGeneration!.id,
-        prompt: updatedGeneration!.prompt,
-        settings: updatedGeneration!.settings as GenerationSettings,
-        status: "completed",
-        errorMessage: null,
-        createdAt: updatedGeneration!.createdAt,
-        updatedAt: updatedGeneration!.updatedAt,
-        images: savedImages.map((img) => ({
-          id: img.id,
-          generationId: img.generationId,
-          imageUrl: img.imageUrl,
-          createdAt: img.createdAt,
-        })),
+        id: generation.id,
+        prompt: generation.prompt,
+        settings: generation.settings as GenerationSettings,
+        status: generation.status as GenerationStatus,
+        errorMessage: generation.errorMessage,
+        comfyuiPromptId: generation.comfyuiPromptId,
+        createdAt: generation.createdAt,
+        updatedAt: generation.updatedAt,
+        images: images || [],
       };
 
       return NextResponse.json({ generation: generationWithImages }, { status: 201 });

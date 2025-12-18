@@ -1,12 +1,17 @@
 import { comfyui } from "@/lib/comfyui";
+import { db } from "@/lib/db";
+import { generations } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 interface ProgressUpdate {
   type: "progress" | "complete" | "error" | "connected";
-  step?: number;
+  currentStep?: number;
   totalSteps?: number;
   percentage?: number;
+  imageIndex?: number;
+  totalImages?: number;
   status?: string;
   message?: string;
 }
@@ -14,40 +19,64 @@ interface ProgressUpdate {
 /**
  * GET /api/generate/progress
  * Server-Sent Events endpoint for real-time generation progress
- * Polls ComfyUI history endpoint for progress updates
+ * Uses ComfyUI WebSocket for step-by-step updates with fallback to polling
+ * 
+ * The promptId parameter is actually the generation database ID.
+ * We need to look up the ComfyUI prompt_id from the generation record.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const promptId = searchParams.get("promptId");
+  const generationId = searchParams.get("promptId"); // Note: this is generation.id, not comfyui prompt_id
+  const imageIndex = parseInt(searchParams.get("imageIndex") || "1", 10);
+  const totalImages = parseInt(searchParams.get("totalImages") || "1", 10);
 
-  if (!promptId) {
-    return new Response(JSON.stringify({ error: "promptId is required" }), {
+  console.log(`[Progress API] Starting progress tracking for generationId: ${generationId}, image ${imageIndex}/${totalImages}`);
+
+  if (!generationId) {
+    return new Response(JSON.stringify({ error: "promptId (generation ID) is required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
   const encoder = new TextEncoder();
+  let webSocketProgressReceived = false;
 
   const stream = new ReadableStream({
     async start(controller) {
       let isAborted = false;
       let pollInterval: ReturnType<typeof setTimeout> | null = null;
+      let progressCleanup: (() => void) | null = null;
+      let comfyuiPromptId: string | null = null;
+      let lastPercent = 0;
 
       const sendEvent = (data: ProgressUpdate) => {
         if (isAborted) return;
         try {
+          console.log(`[Progress API] Sending event: ${data.type}`, {
+            generationId,
+            comfyuiPromptId,
+            percentage: data.percentage,
+            step: data.currentStep,
+            totalSteps: data.totalSteps,
+          });
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-        } catch {
+        } catch (error) {
+          console.error('[Progress API] Error sending event:', error);
           isAborted = true;
         }
       };
 
       const cleanup = () => {
+        console.log(`[Progress API] Cleaning up for generationId: ${generationId}. WebSocket progress received: ${webSocketProgressReceived}`);
         isAborted = true;
         if (pollInterval) {
           clearTimeout(pollInterval);
           pollInterval = null;
+        }
+        if (progressCleanup) {
+          progressCleanup();
+          progressCleanup = null;
         }
         try {
           controller.close();
@@ -57,14 +86,23 @@ export async function GET(request: Request) {
       };
 
       // Handle client disconnect
-      request.signal.addEventListener("abort", cleanup);
+      request.signal.addEventListener("abort", () => {
+        console.log(`[Progress API] Client disconnected for generationId: ${generationId}`);
+        cleanup();
+      });
 
       // Send initial connected event
-      sendEvent({ type: "connected", status: "Connecting to ComfyUI..." });
+      sendEvent({ 
+        type: "connected", 
+        status: "Connecting to ComfyUI...",
+        imageIndex,
+        totalImages,
+      });
 
       // Check if ComfyUI is available
       const isAvailable = await comfyui.healthCheck();
       if (!isAvailable) {
+        console.error(`[Progress API] ComfyUI health check failed for generationId: ${generationId}`);
         sendEvent({
           type: "error",
           message: "ComfyUI is not running",
@@ -74,48 +112,105 @@ export async function GET(request: Request) {
         return;
       }
 
-      sendEvent({ type: "progress", status: "Connected to ComfyUI" });
+      // Get the generation record to find comfyuiPromptId
+      const [generation] = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.id, generationId));
 
-      // Poll for completion
-      const pollForProgress = async () => {
-        if (isAborted) return;
+      if (!generation) {
+        console.warn(`[Progress API] Generation not found: ${generationId}`);
+        sendEvent({
+          type: "error",
+          message: "Generation not found",
+          status: "Error",
+        });
+        cleanup();
+        return;
+      }
 
+      comfyuiPromptId = generation.comfyuiPromptId || null;
+      // Parse settings if needed (it may be a plain object or a JSON string)
+      let settings: any = generation.settings;
+      if (typeof settings === "string") {
         try {
-          const history = await comfyui.getHistory(promptId);
+          settings = JSON.parse(settings);
+        } catch {
+          settings = {};
+        }
+      }
+      const totalSteps = settings?.steps || 20;
+      let lastStep = 0;
+      sendEvent({
+        type: "progress",
+        status: "Connected to ComfyUI",
+        imageIndex,
+        totalImages,
+        currentStep: 0,
+        totalSteps,
+        percentage: 0,
+      });
 
-          if (history) {
-            if (history.status?.completed) {
-              sendEvent({
-                type: "complete",
-                percentage: 100,
-                status: "Generation complete!",
-              });
-              cleanup();
-              return;
-            }
-
-            if (history.status?.status_str === "error") {
-              const errorMessages = history.status.messages
-                .filter((msg) => msg[0] === "execution_error")
-                .map((msg) => JSON.stringify(msg[1]))
-                .join(", ");
-              sendEvent({
-                type: "error",
-                message: errorMessages || "Generation failed",
-                status: "Error",
-              });
-              cleanup();
-              return;
-            }
-          }
-
-          // Continue polling
+      if (comfyuiPromptId) {
+        // Use ComfyUI WebSocket for real progress
+        progressCleanup = comfyui.connectToProgressSocket(comfyuiPromptId, ({ value, max }) => {
+          if(lastPercent >= 100) return; // Ignore any updates after completion
+          webSocketProgressReceived = true;
+          const percent = Math.round((value / max) * 100);
+          lastStep = value;
+          lastPercent = percent;
           sendEvent({
             type: "progress",
-            status: "Generating...",
+            currentStep: value,
+            totalSteps: max,
+            percentage: percent,
+            imageIndex,
+            totalImages,
+            status: `Step ${value} of ${max}`,
           });
+        });
+      }
 
-          pollInterval = setTimeout(pollForProgress, 1000);
+      // Poll for completion in the background (in case WebSocket doesn't send completion)
+      const pollForCompletion = async () => {
+        if (isAborted) return;
+        try {
+          const [gen] = await db
+            .select()
+            .from(generations)
+            .where(eq(generations.id, generationId));
+          if (!gen) {
+            sendEvent({
+              type: "error",
+              message: "Generation not found",
+              status: "Error",
+            });
+            cleanup();
+            return;
+          }
+          if (gen.status === "completed") {
+            sendEvent({
+              type: "complete",
+              currentStep: lastStep || totalSteps,
+              totalSteps,
+              percentage: 100,
+              imageIndex,
+              totalImages,
+              status: `Image ${imageIndex} of ${totalImages} - Generation complete!`,
+            });
+            cleanup();
+            return;
+          }
+          if (gen.status === "failed") {
+            sendEvent({
+              type: "error",
+              message: gen.errorMessage || "Generation failed",
+              status: "Error",
+            });
+            cleanup();
+            return;
+          }
+          pollInterval = setTimeout(pollForCompletion, 2000);
         } catch (error) {
           sendEvent({
             type: "error",
@@ -125,9 +220,7 @@ export async function GET(request: Request) {
           cleanup();
         }
       };
-
-      // Start polling
-      pollForProgress();
+      pollForCompletion();
     },
   });
 

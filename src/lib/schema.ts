@@ -45,6 +45,7 @@ export const generations = pgTable(
     settings: jsonb("settings").notNull(), // Resolution, aspect ratio, etc.
     status: text("status").notNull().default("pending"), // "pending" | "processing" | "completed" | "failed"
     errorMessage: text("error_message"),
+    comfyuiPromptId: text("comfyui_prompt_id"), // ComfyUI prompt_id for real progress tracking
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

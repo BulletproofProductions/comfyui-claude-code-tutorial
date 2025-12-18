@@ -1,0 +1,1 @@
+ALTER TABLE "generations" RENAME COLUMN "comfy_prompt_id" TO "comfyui_prompt_id";

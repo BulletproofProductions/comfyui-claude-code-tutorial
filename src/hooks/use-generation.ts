@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   GenerationSettings,
   GenerationWithImages,
@@ -28,6 +28,11 @@ interface ProgressState {
   step: number;
   totalSteps: number;
   percentage: number;
+  status?: string;
+  currentImageIndex?: number;
+  totalImages?: number;
+  isStalled?: boolean;
+  error?: string | null;
 }
 
 interface UseGenerationReturn {
@@ -41,6 +46,8 @@ interface UseGenerationReturn {
   // Progress tracking
   progress: ProgressState | null;
   currentPromptId: string | null;
+  currentImageIndex: number;
+  totalImages: number;
 
   // Generation list state
   generations: GenerationWithImages[];
@@ -61,6 +68,7 @@ interface UseGenerationReturn {
   clearCurrent: () => void;
   clearError: () => void;
   resetProgress: () => void;
+  completeGeneration: () => void;
 }
 
 export function useGeneration(): UseGenerationReturn {
@@ -74,6 +82,8 @@ export function useGeneration(): UseGenerationReturn {
   // Progress tracking state
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(1);
+  const [totalImages, setTotalImages] = useState(1);
 
   // Generation list state
   const [generations, setGenerations] = useState<GenerationWithImages[]>([]);
@@ -85,12 +95,112 @@ export function useGeneration(): UseGenerationReturn {
     hasMore: false,
   });
 
+  // Listen for real progress events from backend SSE
+  useEffect(() => {
+    if (!currentPromptId || !isGenerating) return;
+    let eventSource: EventSource | null = null;
+    let isMounted = true;
+
+    console.log('[useGeneration] Opening EventSource for generation:', currentPromptId);
+    eventSource = new EventSource(`/api/generate/progress?promptId=${currentPromptId}&imageIndex=${currentImageIndex}&totalImages=${totalImages}`);
+
+    eventSource.onmessage = (event) => {
+      if (!isMounted) return;
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[useGeneration] SSE event received:', data.type, { percentage: data.percentage, step: data.currentStep });
+        switch (data.type) {
+          case "progress":
+            setProgress((prev) => ({
+              ...prev,
+              step: data.currentStep ?? prev?.step ?? 0,
+              totalSteps: data.totalSteps ?? prev?.totalSteps ?? 20,
+              percentage: data.percentage ?? prev?.percentage ?? 0,
+              status: data.status || prev?.status || "Generating...",
+              currentImageIndex: data.imageIndex ?? currentImageIndex,
+              totalImages: data.totalImages ?? totalImages,
+              isStalled: false,
+              error: null,
+            }));
+            break;
+          case "complete":
+            console.log('[useGeneration] Generation complete event received for generation:', currentPromptId);
+            setProgress((prev) => ({
+              ...prev,
+              step: data.currentStep ?? prev?.step ?? 0,
+              totalSteps: data.totalSteps ?? prev?.totalSteps ?? 20,
+              percentage: 100,
+              status: data.status || "Complete",
+              currentImageIndex: data.imageIndex ?? currentImageIndex,
+              totalImages: data.totalImages ?? totalImages,
+              isStalled: false,
+              error: null,
+            }));
+            setIsGenerating(false);
+            // Refetch the generation to get the updated images
+            if (currentGeneration?.id) {
+              console.log('[useGeneration] Refetching generation:', currentGeneration.id);
+              loadGeneration(currentGeneration.id).catch((err) => {
+                console.error('[useGeneration] Failed to refetch generation:', err);
+              });
+            }
+            break;
+          case "error":
+            setProgress((prev) => ({
+              step: prev?.step ?? 0,
+              totalSteps: prev?.totalSteps ?? 20,
+              percentage: prev?.percentage ?? 0,
+              error: data.message || "Generation failed",
+              status: data.status || "Error",
+              isStalled: true,
+              currentImageIndex: prev?.currentImageIndex ?? currentImageIndex,
+              totalImages: prev?.totalImages ?? totalImages,
+            }));
+            setIsGenerating(false);
+            break;
+        }
+      } catch (err) {
+        // Ignore parse errors
+      }
+    };
+
+    eventSource.onerror = () => {
+      if (isMounted) {
+        setProgress((prev) => ({
+          step: prev?.step ?? 0,
+          totalSteps: prev?.totalSteps ?? 20,
+          percentage: prev?.percentage ?? 0,
+          error: "Lost connection to progress server.",
+          status: "Connection lost",
+          isStalled: true,
+          currentImageIndex: prev?.currentImageIndex ?? currentImageIndex,
+          totalImages: prev?.totalImages ?? totalImages,
+        }));
+      }
+    };
+
+    return () => {
+      isMounted = false;
+      if (eventSource) eventSource.close();
+    };
+  }, [currentPromptId, isGenerating, currentImageIndex, totalImages]);
+
   /**
    * Reset progress state
    */
   const resetProgress = useCallback(() => {
     setProgress(null);
     setCurrentPromptId(null);
+    setCurrentImageIndex(1);
+    setTotalImages(1);
+  }, []);
+
+  /**
+   * Complete generation - called when progress reaches 100% or error occurs
+   * Sets isGenerating to false to hide progress component
+   */
+  const completeGeneration = useCallback(() => {
+    setIsGenerating(false);
   }, []);
 
   /**
@@ -100,7 +210,16 @@ export function useGeneration(): UseGenerationReturn {
     async (input: GenerateInput): Promise<GenerationWithImages | null> => {
       setIsGenerating(true);
       setError(null);
-      setProgress({ step: 0, totalSteps: input.settings.steps || 20, percentage: 0 });
+      const imageCount = input.settings.imageCount || 1;
+      setTotalImages(imageCount);
+      setCurrentImageIndex(1);
+      setProgress({ 
+        step: 0, 
+        totalSteps: input.settings.steps || 20, 
+        percentage: 0,
+        currentImageIndex: 1,
+        totalImages: imageCount,
+      });
 
       try {
         const response = await fetch("/api/generate", {
@@ -116,6 +235,7 @@ export function useGeneration(): UseGenerationReturn {
         if (!response.ok) {
           const errorMessage = data.error || "Failed to generate images";
           setError(errorMessage);
+          setIsGenerating(false); // Mark generation as failed
           // Even on error, we may have a generation record with failed status
           if (data.generation) {
             setCurrentGeneration(data.generation);
@@ -128,6 +248,8 @@ export function useGeneration(): UseGenerationReturn {
         const generation = data.generation as GenerationWithImages;
         setCurrentGeneration(generation);
         setCurrentPromptId(generation.id);
+        // Keep isGenerating=true during progress tracking - it will be set to false when progress completes
+        // This allows the progress component to track real-time updates from ComfyUI
 
         // Add to the list if we have a list loaded
         setGenerations((prev) => {
@@ -143,10 +265,11 @@ export function useGeneration(): UseGenerationReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to generate images";
         setError(message);
-        return null;
-      } finally {
         setIsGenerating(false);
         resetProgress();
+        return null;
+      } finally {
+        // Keep isGenerating and progress visible after completion
       }
     },
     [resetProgress]
@@ -316,6 +439,8 @@ export function useGeneration(): UseGenerationReturn {
     error,
     progress,
     currentPromptId,
+    currentImageIndex,
+    totalImages,
     generations,
     isLoadingList,
     pagination,
@@ -327,5 +452,6 @@ export function useGeneration(): UseGenerationReturn {
     clearCurrent,
     clearError,
     resetProgress,
+    completeGeneration,
   };
 }
